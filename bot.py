@@ -38,18 +38,27 @@ MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5")
 # ---------------------------------------------------------------- trends
 
 def trends_from_x_api() -> list[str]:
-    """Requires paid (Basic+) X API read access. Silently skipped otherwise."""
+    """Official X trends. Pay-per-use: ~$0.01 per request, needs credits in
+    console.x.com and X_BEARER_TOKEN set. Silently skipped otherwise.
+
+    X_WOEID picks the region: 23424977 = USA (default), 1 = worldwide,
+    44418 = London, 1118370 = Tokyo, etc.
+    """
     bearer = os.getenv("X_BEARER_TOKEN")
     if not bearer:
         return []
+    woeid = os.getenv("X_WOEID", "23424977")
     try:
         req = urllib.request.Request(
-            "https://api.x.com/2/trends/by/woeid/1",  # 1 = worldwide
+            f"https://api.x.com/2/trends/by/woeid/{woeid}",
             headers={"Authorization": f"Bearer {bearer}", **UA},
         )
         with urllib.request.urlopen(req, timeout=15) as r:
             data = json.load(r)
         return [t["trend_name"] for t in data.get("data", [])][:20]
+    except urllib.error.HTTPError as e:
+        print(f"[trends] x api error {e.code}: {e.read().decode()[:200]}", file=sys.stderr)
+        return []
     except Exception as e:
         print(f"[trends] x api failed: {e}", file=sys.stderr)
         return []
