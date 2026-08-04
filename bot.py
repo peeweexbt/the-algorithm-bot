@@ -102,12 +102,92 @@ def get_trends() -> list[str]:
     sys.exit("[trends] no trend source available. add topics to trends_fallback.txt")
 
 
+# ---------------------------------------------------------------- taste (category weights)
+
+# Higher number = the organism prefers this flavor. 0 = never touch it.
+# Edit freely.
+WEIGHTS = {
+    "crypto": 12,       # coins, memecoins, $TICKERs, onchain drama
+    "meme": 10,
+    "pop_culture": 8,
+    "finance": 8,       # traditional markets: stocks, fed, earnings
+    "news": 6,
+    "other": 3,
+    "sports": 1,
+}
+
+
+def classify_with_claude(trends: list[str]) -> dict | None:
+    """One cheap Claude call tags every trend. Returns {trend: category} or None."""
+    key = os.getenv("ANTHROPIC_API_KEY")
+    if not key:
+        return None
+    cats = ", ".join(WEIGHTS)
+    body = json.dumps({
+        "model": MODEL,
+        "max_tokens": 800,
+        "system": (
+            f"Classify X trending topics. Categories: {cats}. "
+            "crypto = coins, memecoins, tokens, exchanges, onchain/CT drama ($TICKER for a "
+            "token is always crypto). meme = internet jokes/brainrot/viral moments. "
+            "pop_culture = celebrities, music, movies, TV, fandoms. finance = traditional "
+            "markets: stocks, fed, earnings ($TICKER for a stock is finance). news = "
+            "politics, world events, incidents. sports = athletes, teams, games, leagues. "
+            "other = anything else. "
+            "Reply with ONLY a JSON object mapping each topic exactly as given to one category."
+        ),
+        "messages": [{"role": "user", "content": json.dumps(trends)}],
+    }).encode()
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=body,
+        headers={"x-api-key": key, "anthropic-version": "2023-06-01",
+                 "content-type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.load(r)
+        text = next(b["text"] for b in data.get("content", []) if b.get("type") == "text")
+        text = re.sub(r"^```(json)?|```$", "", text.strip(), flags=re.M).strip()
+        tags = json.loads(text)
+        return {t: (tags.get(t) if tags.get(t) in WEIGHTS else "other") for t in trends}
+    except Exception as e:
+        print(f"[classify] claude failed: {e!r}", file=sys.stderr)
+        return None
+
+
+def classify_by_keywords(trends: list[str]) -> dict:
+    """Crude fallback when no API key. Won't catch athlete names — Claude does."""
+    out = {}
+    for t in trends:
+        l = t.lower()
+        if l.startswith("$") or re.search(r"coin|crypto|btc|eth|sol|token|airdrop|pump|rug", l):
+            out[t] = "crypto"
+        elif re.search(r"stock|nasdaq|s&p|dow|fed rate|earnings", l):
+            out[t] = "finance"
+        elif re.search(r"nfl|nba|mlb|nhl|ufc|fifa|f1|grand prix|super bowl|world series|playoffs|vs\b", l):
+            out[t] = "sports"
+        elif l.startswith("#") and re.search(r"monday|tuesday|wednesday|thursday|friday|motivation|vibes", l):
+            out[t] = "meme"
+        else:
+            out[t] = "other"
+    return out
+
+
+def classify(trends: list[str]) -> dict:
+    return classify_with_claude(trends) or classify_by_keywords(trends)
+
+
 def pick_trend() -> str:
     trends = get_trends()
     recent = _load_state().get("recent_topics", [])
     fresh = [t for t in trends if t.lower() not in recent] or trends
-    choice = random.choice(fresh[:8] if len(fresh) >= 8 else fresh)
-    print(f"[trends] picked={choice!r}")
+    tags = classify(fresh)
+    weights = [WEIGHTS.get(tags.get(t, "other"), 3) for t in fresh]
+    if sum(weights) == 0:
+        weights = [1] * len(fresh)
+    choice = random.choices(fresh, weights=weights, k=1)[0]
+    print(f"[trends] picked={choice!r} category={tags.get(choice)}")
     return choice
 
 
@@ -126,8 +206,17 @@ NOTES = [
 
 
 def emit_json(path: str) -> None:
-    """Write the observatory feed the website reads. No tweeting."""
+    """Write the observatory feed the website reads. No tweeting.
+
+    Trends are reordered by taste: preferred categories (see WEIGHTS) float to
+    the top; anything with weight 0 is dropped entirely.
+    """
     trends = get_trends()
+    tags = classify(trends)
+    ranked = sorted(
+        [t for t in trends if WEIGHTS.get(tags.get(t, "other"), 3) > 0],
+        key=lambda t: (-WEIGHTS.get(tags.get(t, "other"), 3), trends.index(t)),
+    )[:8]
     out = {
         "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "platforms": [{
@@ -137,15 +226,16 @@ def emit_json(path: str) -> None:
                 {
                     "name": t,
                     "level": round(max(0.35, 0.96 - i * 0.045), 2),
-                    "note": random.choice(NOTES).format(p=int(max(35, 96 - i * 4.5))),
+                    "note": tags.get(t, "other").replace("_", " ") + " · "
+                            + random.choice(NOTES).format(p=int(max(35, 96 - i * 4.5))),
                 }
-                for i, t in enumerate(trends[:8])
+                for i, t in enumerate(ranked)
             ],
             "foot": "live ingestion via public trend telemetry",
         }],
     }
     Path(path).write_text(json.dumps(out, indent=2, ensure_ascii=False))
-    print(f"[emit] wrote {path} ({len(trends[:8])} trends)")
+    print(f"[emit] wrote {path} ({len(ranked)} trends)")
 
 
 # ---------------------------------------------------------------- generation
