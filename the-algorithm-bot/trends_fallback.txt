@@ -1,0 +1,9 @@
+# manual trend list — used only if X API and scraping both fail
+# one topic per line. update whenever you like.
+AI discourse
+the new movie everyone is fighting about
+a celebrity apology video
+a memecoin doing a 400% candle
+the main character of the day
+a sports team collapsing in real time
+a food hack that should not exist
