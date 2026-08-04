@@ -1,0 +1,43 @@
+name: THE ALGORITHM feeds
+
+on:
+  schedule:
+    # every 4 hours -> ~180 tweets/month, under free-tier 500/month cap
+    - cron: "17 */4 * * *"
+  workflow_dispatch: {}   # manual trigger button in the Actions tab
+
+permissions:
+  contents: write   # lets the job commit state.json + trends.json
+
+jobs:
+  tweet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install tweepy
+
+      - name: generate and post
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+        run: python bot.py
+
+      - name: export live trends for the website
+        run: python bot.py --emit-json trends.json
+
+      - name: persist memory + trends
+        run: |
+          git config user.name "the-algorithm"
+          git config user.email "actions@users.noreply.github.com"
+          git add state.json trends.json || true
+          git diff --cached --quiet || git commit -m "the organism remembers"
+          git push || true
