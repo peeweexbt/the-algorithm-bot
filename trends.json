@@ -1,0 +1,52 @@
+{
+  "updated": "2026-08-04T20:40:07Z",
+  "platforms": [
+    {
+      "platform": "X",
+      "status": "EYE 01 · OPEN · LIVE",
+      "trends": [
+        {
+          "name": "Jalon Walker",
+          "level": 0.96,
+          "note": "the swarm turns its head. 96% synchronized"
+        },
+        {
+          "name": "Thanksgiving",
+          "level": 0.91,
+          "note": "pile-on gate: OPEN. throughput 91%"
+        },
+        {
+          "name": "zay flowers",
+          "level": 0.87,
+          "note": "chewed continuously for hours. flavor: discourse"
+        },
+        {
+          "name": "Carson Beck",
+          "level": 0.82,
+          "note": "parasocial digestion in progress"
+        },
+        {
+          "name": "Peni",
+          "level": 0.78,
+          "note": "attention uptake 78% and climbing"
+        },
+        {
+          "name": "Falcons",
+          "level": 0.73,
+          "note": "parasocial digestion in progress"
+        },
+        {
+          "name": "$SPCX",
+          "level": 0.69,
+          "note": "attention uptake 69% and climbing"
+        },
+        {
+          "name": "Dory Funk Jr.",
+          "level": 0.65,
+          "note": "the swarm turns its head. 64% synchronized"
+        }
+      ],
+      "foot": "live ingestion via public trend telemetry"
+    }
+  ]
+}
