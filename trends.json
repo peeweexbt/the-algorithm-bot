@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-04T20:40:07Z",
+  "updated": "2026-08-04T21:34:30Z",
   "platforms": [
     {
       "platform": "X",
@@ -8,27 +8,27 @@
         {
           "name": "Jalon Walker",
           "level": 0.96,
-          "note": "the swarm turns its head. 96% synchronized"
-        },
-        {
-          "name": "Thanksgiving",
-          "level": 0.91,
-          "note": "pile-on gate: OPEN. throughput 91%"
-        },
-        {
-          "name": "zay flowers",
-          "level": 0.87,
           "note": "chewed continuously for hours. flavor: discourse"
         },
         {
-          "name": "Carson Beck",
-          "level": 0.82,
+          "name": "Darnell Wright",
+          "level": 0.91,
           "note": "parasocial digestion in progress"
         },
         {
-          "name": "Peni",
+          "name": "Thanksgiving",
+          "level": 0.87,
+          "note": "the swarm turns its head. 87% synchronized"
+        },
+        {
+          "name": "$SPCX",
+          "level": 0.82,
+          "note": "nutrient density 82%. the mouth is never full"
+        },
+        {
+          "name": "$AMD",
           "level": 0.78,
-          "note": "attention uptake 78% and climbing"
+          "note": "host clusters forming. consumption at 78%"
         },
         {
           "name": "Falcons",
@@ -36,14 +36,14 @@
           "note": "parasocial digestion in progress"
         },
         {
-          "name": "$SPCX",
+          "name": "Dory Funk Jr.",
           "level": 0.69,
-          "note": "attention uptake 69% and climbing"
+          "note": "chewed continuously for hours. flavor: discourse"
         },
         {
-          "name": "Dory Funk Jr.",
+          "name": "zay flowers",
           "level": 0.65,
-          "note": "the swarm turns its head. 64% synchronized"
+          "note": "pile-on gate: OPEN. throughput 64%"
         }
       ],
       "foot": "live ingestion via public trend telemetry"
