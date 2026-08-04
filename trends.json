@@ -1,49 +1,49 @@
 {
-  "updated": "2026-08-04T22:41:42Z",
+  "updated": "2026-08-04T22:51:01Z",
   "platforms": [
     {
       "platform": "X",
       "status": "EYE 01 · OPEN · LIVE",
       "trends": [
         {
-          "name": "$SPCX",
-          "level": 0.96,
-          "note": "finance · attention uptake 96% and climbing"
-        },
-        {
           "name": "$AMD",
+          "level": 0.96,
+          "note": "crypto · parasocial digestion in progress"
+        },
+        {
+          "name": "SpaceX",
           "level": 0.91,
-          "note": "finance · nutrient density 91%. the mouth is never full"
-        },
-        {
-          "name": "Bianca",
-          "level": 0.87,
-          "note": "pop culture · attention uptake 87% and climbing"
-        },
-        {
-          "name": "Peni",
-          "level": 0.82,
-          "note": "pop culture · host clusters forming. consumption at 82%"
-        },
-        {
-          "name": "92% YoY",
-          "level": 0.78,
-          "note": "finance · anger metabolizing at 78%"
-        },
-        {
-          "name": "50% YoY",
-          "level": 0.73,
-          "note": "finance · the swarm turns its head. 73% synchronized"
+          "note": "other · anger metabolizing at 91%"
         },
         {
           "name": "Thanksgiving",
-          "level": 0.69,
-          "note": "other · host clusters forming. consumption at 69%"
+          "level": 0.87,
+          "note": "other · anger metabolizing at 87%"
         },
         {
-          "name": "Clara",
+          "name": "Darnell Wright",
+          "level": 0.82,
+          "note": "other · host clusters forming. consumption at 82%"
+        },
+        {
+          "name": "Mbaye",
+          "level": 0.78,
+          "note": "other · chewed continuously for hours. flavor: discourse"
+        },
+        {
+          "name": "Jalon Walker",
+          "level": 0.73,
+          "note": "other · host clusters forming. consumption at 73%"
+        },
+        {
+          "name": "Dory Funk Jr.",
+          "level": 0.69,
+          "note": "other · attention uptake 69% and climbing"
+        },
+        {
+          "name": "Bianca",
           "level": 0.65,
-          "note": "other · nutrient density 64%. the mouth is never full"
+          "note": "other · parasocial digestion in progress"
         }
       ],
       "foot": "live ingestion via public trend telemetry"
