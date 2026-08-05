@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-05T00:16:21Z",
+  "updated": "2026-08-05T00:25:28Z",
   "platforms": [
     {
       "platform": "X",
@@ -8,45 +8,45 @@
         {
           "name": "$PUMP (Pump.fun)",
           "level": 0.96,
-          "note": "crypto · chewed continuously for hours. flavor: discourse"
+          "note": "crypto · the swarm turns its head. 96% synchronized"
         },
         {
           "name": "$CASHCAT (Cash Cat)",
           "level": 0.91,
-          "note": "crypto · the swarm turns its head. 91% synchronized"
+          "note": "crypto · host clusters forming. consumption at 91%"
         },
         {
           "name": "$PENGU (Pudgy Penguins)",
           "level": 0.87,
-          "note": "crypto · host clusters forming. consumption at 87%"
+          "note": "crypto · pile-on gate: OPEN. throughput 87%"
         },
         {
           "name": "$XRP (XRP)",
           "level": 0.82,
-          "note": "crypto · anger metabolizing at 82%"
+          "note": "crypto · pile-on gate: OPEN. throughput 82%"
         },
         {
           "name": "Todd Blanche's nomination for attorney general clears critical hurdle after deal with GOP holdouts",
           "level": 0.78,
-          "note": "news · chewed continuously for hours. flavor: discourse"
+          "note": "news · anger metabolizing at 78%"
         },
         {
           "name": "From TikTok videos to political claims: How misleading information spread during the Ceuta crisis",
           "level": 0.73,
-          "note": "news · attention uptake 73% and climbing"
+          "note": "news · host clusters forming. consumption at 73%"
         },
         {
           "name": "Paul sets Fauci committee vote for Thursday",
           "level": 0.69,
-          "note": "news · the swarm turns its head. 69% synchronized"
+          "note": "news · nutrient density 69%. the mouth is never full"
         },
         {
-          "name": "$ADA (Cardano)",
+          "name": "$HYPE (Hyperliquid)",
           "level": 0.65,
           "note": "crypto · anger metabolizing at 64%"
         },
         {
-          "name": "$HYPE (Hyperliquid)",
+          "name": "$AERO (Aerodrome Finance)",
           "level": 0.6,
           "note": "crypto · chewed continuously for hours. flavor: discourse"
         }
