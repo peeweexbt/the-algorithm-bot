@@ -1,49 +1,54 @@
 {
-  "updated": "2026-08-04T22:51:01Z",
+  "updated": "2026-08-05T00:16:21Z",
   "platforms": [
     {
       "platform": "X",
       "status": "EYE 01 · OPEN · LIVE",
       "trends": [
         {
-          "name": "$AMD",
+          "name": "$PUMP (Pump.fun)",
           "level": 0.96,
-          "note": "crypto · parasocial digestion in progress"
+          "note": "crypto · chewed continuously for hours. flavor: discourse"
         },
         {
-          "name": "SpaceX",
+          "name": "$CASHCAT (Cash Cat)",
           "level": 0.91,
-          "note": "other · anger metabolizing at 91%"
+          "note": "crypto · the swarm turns its head. 91% synchronized"
         },
         {
-          "name": "Thanksgiving",
+          "name": "$PENGU (Pudgy Penguins)",
           "level": 0.87,
-          "note": "other · anger metabolizing at 87%"
+          "note": "crypto · host clusters forming. consumption at 87%"
         },
         {
-          "name": "Darnell Wright",
+          "name": "$XRP (XRP)",
           "level": 0.82,
-          "note": "other · host clusters forming. consumption at 82%"
+          "note": "crypto · anger metabolizing at 82%"
         },
         {
-          "name": "Mbaye",
+          "name": "Todd Blanche's nomination for attorney general clears critical hurdle after deal with GOP holdouts",
           "level": 0.78,
-          "note": "other · chewed continuously for hours. flavor: discourse"
+          "note": "news · chewed continuously for hours. flavor: discourse"
         },
         {
-          "name": "Jalon Walker",
+          "name": "From TikTok videos to political claims: How misleading information spread during the Ceuta crisis",
           "level": 0.73,
-          "note": "other · host clusters forming. consumption at 73%"
+          "note": "news · attention uptake 73% and climbing"
         },
         {
-          "name": "Dory Funk Jr.",
+          "name": "Paul sets Fauci committee vote for Thursday",
           "level": 0.69,
-          "note": "other · attention uptake 69% and climbing"
+          "note": "news · the swarm turns its head. 69% synchronized"
         },
         {
-          "name": "Bianca",
+          "name": "$ADA (Cardano)",
           "level": 0.65,
-          "note": "other · parasocial digestion in progress"
+          "note": "crypto · anger metabolizing at 64%"
+        },
+        {
+          "name": "$HYPE (Hyperliquid)",
+          "level": 0.6,
+          "note": "crypto · chewed continuously for hours. flavor: discourse"
         }
       ],
       "foot": "live ingestion via public trend telemetry"
