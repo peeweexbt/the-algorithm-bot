@@ -1,39 +1,39 @@
 {
-  "updated": "2026-08-05T14:34:37Z",
+  "updated": "2026-08-05T17:54:47Z",
   "platforms": [
     {
       "platform": "Gambler",
       "status": "EYE 01 · OPEN · LIVE",
       "trends": [
         {
-          "name": "$CASHCAT (Cash Cat)",
+          "name": "$UNI (Uniswap)",
           "level": 0.95,
-          "note": "nutrient density 95%. the mouth is never full"
+          "note": "attention uptake 95% and climbing"
+        },
+        {
+          "name": "$CASHCAT (Cash Cat)",
+          "level": 0.89,
+          "note": "parasocial digestion in progress"
         },
         {
           "name": "$PENGU (Pudgy Penguins)",
-          "level": 0.89,
-          "note": "the swarm turns its head. 89% synchronized"
-        },
-        {
-          "name": "$UNI (Uniswap)",
           "level": 0.83,
-          "note": "pile-on gate: OPEN. throughput 83%"
-        },
-        {
-          "name": "$QUID (Squid)",
-          "level": 0.77,
-          "note": "attention uptake 77% and climbing"
-        },
-        {
-          "name": "$HFT (Hashflow)",
-          "level": 0.71,
           "note": "chewed continuously for hours. flavor: discourse"
         },
         {
-          "name": "$BTC (Bitcoin)",
+          "name": "$ZIG (ZIGChain)",
+          "level": 0.77,
+          "note": "the swarm turns its head. 77% synchronized"
+        },
+        {
+          "name": "$PUMP (Pump.fun)",
+          "level": 0.71,
+          "note": "anger metabolizing at 71%"
+        },
+        {
+          "name": "$QUID (Squid)",
           "level": 0.65,
-          "note": "anger metabolizing at 65%"
+          "note": "attention uptake 65% and climbing"
         }
       ],
       "foot": "nutrient class: coins · charts · hope · live ingestion from X"
@@ -43,34 +43,34 @@
       "status": "EYE 02 · OPEN · LIVE",
       "trends": [
         {
-          "name": "Pakistan: Authorities must restore Imran Khan’s rights as detention reaches third anniversary",
+          "name": "Pakistan’s Khan in jail for 3 years: PTI rallies over ‘arbitrary detention’",
           "level": 0.95,
-          "note": "parasocial digestion in progress"
+          "note": "the swarm turns its head. 95% synchronized"
         },
         {
-          "name": "Trump says deal to reopen Strait of Hormuz could come as early as today",
+          "name": "Ex-PM Sheikh Hasina announces plan to return to Bangladesh",
           "level": 0.89,
-          "note": "pile-on gate: OPEN. throughput 89%"
+          "note": "attention uptake 89% and climbing"
+        },
+        {
+          "name": "Nigeria's president orders a 80% salary increase for junior soldiers",
+          "level": 0.83,
+          "note": "attention uptake 83% and climbing"
         },
         {
           "name": "Scoop: Inside Hegseth's classified plea for more defense funds",
-          "level": 0.83,
-          "note": "parasocial digestion in progress"
-        },
-        {
-          "name": "Secretary Rubio’s Meeting with Paraguayan Vice President Alliana",
           "level": 0.77,
-          "note": "host clusters forming. consumption at 77%"
+          "note": "pile-on gate: OPEN. throughput 77%"
         },
         {
-          "name": "Trump energy chief lied to Congress about canceled clean energy funds, lawmakers allege",
+          "name": "Trump says deal to reopen Strait of Hormuz could come as early as today",
           "level": 0.71,
-          "note": "parasocial digestion in progress"
+          "note": "pile-on gate: OPEN. throughput 71%"
         },
         {
-          "name": "House Ethics Committee opens investigation into domestic abuse allegations against Rep. Max Miller",
+          "name": "Senate panel to vote on Fauci contempt resolution after tense hearing",
           "level": 0.65,
-          "note": "pile-on gate: OPEN. throughput 65%"
+          "note": "the swarm turns its head. 65% synchronized"
         }
       ],
       "foot": "nutrient class: news · politics · doom · live ingestion from X"
@@ -80,34 +80,34 @@
       "status": "EYE 03 · OPEN · LIVE",
       "trends": [
         {
-          "name": "Perez Hilton",
+          "name": "Michigan",
           "level": 0.95,
-          "note": "pile-on gate: OPEN. throughput 95%"
+          "note": "chewed continuously for hours. flavor: discourse"
         },
         {
-          "name": "#YEONJUNonGMA",
+          "name": "Mike Rogers",
           "level": 0.89,
-          "note": "parasocial digestion in progress"
+          "note": "pile-on gate: OPEN. throughput 89%"
         },
         {
-          "name": "#MegalómanaMachado",
+          "name": "AIPAC",
           "level": 0.83,
-          "note": "attention uptake 83% and climbing"
+          "note": "anger metabolizing at 83%"
         },
         {
-          "name": "#XMen97",
+          "name": "El-Sayed",
           "level": 0.77,
-          "note": "attention uptake 77% and climbing"
+          "note": "pile-on gate: OPEN. throughput 77%"
         },
         {
-          "name": "Good Wednesday",
+          "name": "Jeff Dean",
           "level": 0.71,
           "note": "anger metabolizing at 71%"
         },
         {
-          "name": "Stevens",
+          "name": "#BlueWaveIn90Days",
           "level": 0.65,
-          "note": "the swarm turns its head. 65% synchronized"
+          "note": "anger metabolizing at 65%"
         }
       ],
       "foot": "nutrient class: memes · humor · brainrot · live ingestion from X"
