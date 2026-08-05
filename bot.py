@@ -125,8 +125,12 @@ WEIGHTS = {
     "sports": 0,        # 0 = never tweeted about, never shown on the site
 }
 
-# How many site-feed slots each dedicated source gets (rest filled from X trends).
-MIX = {"crypto": 4, "news": 3}
+# Observatory columns: category -> (display name, eye, blurb). X-only, three diets.
+DIETS = [
+    ("Gambler", "EYE 01", "coins · charts · hope", ("crypto", "finance")),
+    ("Black Pill", "EYE 02", "news · politics · doom", ("news",)),
+    ("Slop", "EYE 03", "memes · humor · brainrot", ("meme", "pop_culture", "other")),
+]
 
 
 def trends_from_coingecko() -> list[str]:
@@ -269,101 +273,44 @@ NOTES = [
 ]
 
 
-def infer_secondary_platforms(topics: list[str]) -> list[dict]:
-    """TikTok/IG have no free trend APIs. The organism extrapolates instead:
-    one Claude call infers plausible current trends there from the real X
-    trends + headlines + coins it already ingested. Clearly labeled INFERRED."""
-    key = os.getenv("ANTHROPIC_API_KEY")
-    if not key:
-        return []
-    body = json.dumps({
-        "model": MODEL,
-        "max_tokens": 900,
-        "system": (
-            "You infer what is plausibly trending on TikTok and Instagram right now, "
-            "given real currently-trending X topics, news headlines, and coins. "
-            "Cross-platform culture overlaps: the same discourse, songs, aesthetics, and "
-            "formats travel between apps. Extrapolate formats (sounds, challenges, reel "
-            "styles, aesthetics, storytimes) tied to the given topics where natural. "
-            "Do NOT invent specific real people or specific events not implied by the "
-            "input. Each trend gets a short clinical-eerie 'note' in the voice of a "
-            "hive-mind organism describing how it is consuming attention (max 8 words). "
-            'Reply ONLY with JSON: {"tiktok":[{"name":"...","note":"..."}],'
-            '"instagram":[{"name":"...","note":"..."}]} — 5 items each.'
-        ),
-        "messages": [{"role": "user", "content": json.dumps(topics)}],
-    }).encode()
-    req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
-        data=body,
-        headers={"x-api-key": key, "anthropic-version": "2023-06-01",
-                 "content-type": "application/json"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=60) as r:
-            data = json.load(r)
-        text = next(b["text"] for b in data.get("content", []) if b.get("type") == "text")
-        text = re.sub(r"^```(json)?|```$", "", text.strip(), flags=re.M).strip()
-        inferred = json.loads(text)
-        out = []
-        for platform, eye in (("TikTok", "EYE 02"), ("Instagram", "EYE 03")):
-            items = inferred.get(platform.lower(), [])[:5]
-            if not items:
-                continue
-            out.append({
-                "platform": platform,
-                "status": f"{eye} · INFERRED",
-                "trends": [
-                    {"name": str(it.get("name", ""))[:80],
-                     "level": round(max(0.35, 0.9 - i * 0.07), 2),
-                     "note": str(it.get("note", ""))[:90]}
-                    for i, it in enumerate(items) if it.get("name")
-                ],
-                "foot": "no direct feed exists. the organism extrapolates from cross-platform residue",
-            })
-        return out
-    except Exception as e:
-        print(f"[infer] secondary platforms failed: {e!r}", file=sys.stderr)
-        return []
-
-
 def emit_json(path: str) -> None:
     """Write the observatory feed the website reads. No tweeting.
 
-    Slots are filled per MIX from the dedicated crypto + politics feeds, the
-    rest from X trends ranked by WEIGHTS. Weight-0 categories never appear.
+    X-only, sorted into the three diets (see DIETS): Gambler (crypto/finance),
+    Black Pill (news/politics), Slop (memes/pop culture). Weight-0 categories
+    (e.g. sports) never appear anywhere.
     """
     pool = build_pool()
     by_cat: dict[str, list[str]] = {}
     for t, c in pool:
         by_cat.setdefault(c, []).append(t)
-    picked: list[tuple[str, str]] = []
-    for cat, n in MIX.items():
-        picked += [(t, cat) for t in by_cat.get(cat, [])[:n]]
-    rest = [(t, c) for t, c in pool if (t, c) not in picked]
-    rest.sort(key=lambda tc: -WEIGHTS.get(tc[1], 2))
-    picked += rest[: max(0, 9 - len(picked))]
-    ranked = picked[:9]
-    tags = dict(ranked)
-    out = {
-        "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "platforms": [{
-            "platform": "X",
-            "status": "EYE 01 · OPEN · LIVE",
+
+    platforms = []
+    for name, eye, blurb, cats in DIETS:
+        items: list[str] = []
+        for c in cats:
+            items += [t for t in by_cat.get(c, []) if t not in items]
+        items = items[:6]
+        platforms.append({
+            "platform": name,
+            "status": f"{eye} · OPEN · LIVE",
             "trends": [
                 {
                     "name": t,
-                    "level": round(max(0.35, 0.96 - i * 0.045), 2),
-                    "note": c.replace("_", " ") + " · "
-                            + random.choice(NOTES).format(p=int(max(35, 96 - i * 4.5))),
+                    "level": round(max(0.35, 0.95 - i * 0.06), 2),
+                    "note": random.choice(NOTES).format(p=int(max(35, 95 - i * 6))),
                 }
-                for i, (t, c) in enumerate(ranked)
+                for i, t in enumerate(items)
             ],
-            "foot": "live ingestion via public trend telemetry",
-        }] + infer_secondary_platforms([t for t, _ in ranked]),
+            "foot": f"nutrient class: {blurb} · live ingestion from X",
+        })
+
+    out = {
+        "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "platforms": platforms,
     }
     Path(path).write_text(json.dumps(out, indent=2, ensure_ascii=False))
-    print(f"[emit] wrote {path} ({len(out['platforms'])} platforms, {len(ranked)} X trends)")
+    print(f"[emit] wrote {path} ({', '.join(str(len(p['trends'])) for p in platforms)} trends per diet)")
 
 
 # ---------------------------------------------------------------- generation
