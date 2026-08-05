@@ -269,6 +269,64 @@ NOTES = [
 ]
 
 
+def infer_secondary_platforms(topics: list[str]) -> list[dict]:
+    """TikTok/IG have no free trend APIs. The organism extrapolates instead:
+    one Claude call infers plausible current trends there from the real X
+    trends + headlines + coins it already ingested. Clearly labeled INFERRED."""
+    key = os.getenv("ANTHROPIC_API_KEY")
+    if not key:
+        return []
+    body = json.dumps({
+        "model": MODEL,
+        "max_tokens": 900,
+        "system": (
+            "You infer what is plausibly trending on TikTok and Instagram right now, "
+            "given real currently-trending X topics, news headlines, and coins. "
+            "Cross-platform culture overlaps: the same discourse, songs, aesthetics, and "
+            "formats travel between apps. Extrapolate formats (sounds, challenges, reel "
+            "styles, aesthetics, storytimes) tied to the given topics where natural. "
+            "Do NOT invent specific real people or specific events not implied by the "
+            "input. Each trend gets a short clinical-eerie 'note' in the voice of a "
+            "hive-mind organism describing how it is consuming attention (max 8 words). "
+            'Reply ONLY with JSON: {"tiktok":[{"name":"...","note":"..."}],'
+            '"instagram":[{"name":"...","note":"..."}]} — 5 items each.'
+        ),
+        "messages": [{"role": "user", "content": json.dumps(topics)}],
+    }).encode()
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=body,
+        headers={"x-api-key": key, "anthropic-version": "2023-06-01",
+                 "content-type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.load(r)
+        text = next(b["text"] for b in data.get("content", []) if b.get("type") == "text")
+        text = re.sub(r"^```(json)?|```$", "", text.strip(), flags=re.M).strip()
+        inferred = json.loads(text)
+        out = []
+        for platform, eye in (("TikTok", "EYE 02"), ("Instagram", "EYE 03")):
+            items = inferred.get(platform.lower(), [])[:5]
+            if not items:
+                continue
+            out.append({
+                "platform": platform,
+                "status": f"{eye} · INFERRED",
+                "trends": [
+                    {"name": str(it.get("name", ""))[:80],
+                     "level": round(max(0.35, 0.9 - i * 0.07), 2),
+                     "note": str(it.get("note", ""))[:90]}
+                    for i, it in enumerate(items) if it.get("name")
+                ],
+                "foot": "no direct feed exists. the organism extrapolates from cross-platform residue",
+            })
+        return out
+    except Exception as e:
+        print(f"[infer] secondary platforms failed: {e!r}", file=sys.stderr)
+        return []
+
+
 def emit_json(path: str) -> None:
     """Write the observatory feed the website reads. No tweeting.
 
@@ -302,10 +360,10 @@ def emit_json(path: str) -> None:
                 for i, (t, c) in enumerate(ranked)
             ],
             "foot": "live ingestion via public trend telemetry",
-        }],
+        }] + infer_secondary_platforms([t for t, _ in ranked]),
     }
     Path(path).write_text(json.dumps(out, indent=2, ensure_ascii=False))
-    print(f"[emit] wrote {path} ({len(ranked)} trends)")
+    print(f"[emit] wrote {path} ({len(out['platforms'])} platforms, {len(ranked)} X trends)")
 
 
 # ---------------------------------------------------------------- generation
