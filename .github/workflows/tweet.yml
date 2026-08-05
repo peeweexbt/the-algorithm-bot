@@ -2,8 +2,8 @@ name: THE ALGORITHM feeds
 
 on:
   schedule:
-    # every 4 hours -> ~180 tweets/month, safely under free-tier 500/month cap
-    - cron: "17 */4 * * *"
+    # every 2 hours -> ~360 tweets/month, still under free-tier 500/month cap
+    - cron: "17 */2 * * *"
   workflow_dispatch: {}   # manual trigger button in the Actions tab
 
 permissions:
