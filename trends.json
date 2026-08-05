@@ -1,39 +1,39 @@
 {
-  "updated": "2026-08-05T10:47:05Z",
+  "updated": "2026-08-05T14:34:37Z",
   "platforms": [
     {
       "platform": "Gambler",
       "status": "EYE 01 · OPEN · LIVE",
       "trends": [
         {
-          "name": "$GRVT (GRVT Token)",
-          "level": 0.95,
-          "note": "anger metabolizing at 95%"
-        },
-        {
           "name": "$CASHCAT (Cash Cat)",
-          "level": 0.89,
-          "note": "chewed continuously for hours. flavor: discourse"
+          "level": 0.95,
+          "note": "nutrient density 95%. the mouth is never full"
         },
         {
-          "name": "$PUMP (Pump.fun)",
+          "name": "$PENGU (Pudgy Penguins)",
+          "level": 0.89,
+          "note": "the swarm turns its head. 89% synchronized"
+        },
+        {
+          "name": "$UNI (Uniswap)",
           "level": 0.83,
-          "note": "attention uptake 83% and climbing"
+          "note": "pile-on gate: OPEN. throughput 83%"
         },
         {
           "name": "$QUID (Squid)",
           "level": 0.77,
-          "note": "the swarm turns its head. 77% synchronized"
+          "note": "attention uptake 77% and climbing"
         },
         {
-          "name": "$HYPE (Hyperliquid)",
+          "name": "$HFT (Hashflow)",
           "level": 0.71,
-          "note": "attention uptake 71% and climbing"
+          "note": "chewed continuously for hours. flavor: discourse"
         },
         {
-          "name": "$PENGU (Pudgy Penguins)",
+          "name": "$BTC (Bitcoin)",
           "level": 0.65,
-          "note": "pile-on gate: OPEN. throughput 65%"
+          "note": "anger metabolizing at 65%"
         }
       ],
       "foot": "nutrient class: coins · charts · hope · live ingestion from X"
@@ -43,34 +43,34 @@
       "status": "EYE 02 · OPEN · LIVE",
       "trends": [
         {
-          "name": "House Ethics Committee opens investigation into domestic abuse allegations against Rep. Max Miller",
+          "name": "Pakistan: Authorities must restore Imran Khan’s rights as detention reaches third anniversary",
           "level": 0.95,
-          "note": "chewed continuously for hours. flavor: discourse"
+          "note": "parasocial digestion in progress"
         },
         {
-          "name": "Todd Blanche's nomination for attorney general clears critical hurdle after deal with GOP holdouts",
+          "name": "Trump says deal to reopen Strait of Hormuz could come as early as today",
           "level": 0.89,
+          "note": "pile-on gate: OPEN. throughput 89%"
+        },
+        {
+          "name": "Scoop: Inside Hegseth's classified plea for more defense funds",
+          "level": 0.83,
           "note": "parasocial digestion in progress"
         },
         {
           "name": "Secretary Rubio’s Meeting with Paraguayan Vice President Alliana",
-          "level": 0.83,
-          "note": "chewed continuously for hours. flavor: discourse"
-        },
-        {
-          "name": "Toppled Bangladesh leader Sheikh Hasina to speak today: What we can expect",
           "level": 0.77,
-          "note": "chewed continuously for hours. flavor: discourse"
+          "note": "host clusters forming. consumption at 77%"
         },
         {
-          "name": "From TikTok videos to political claims: How misleading information spread during the Ceuta crisis",
+          "name": "Trump energy chief lied to Congress about canceled clean energy funds, lawmakers allege",
           "level": 0.71,
-          "note": "the swarm turns its head. 71% synchronized"
+          "note": "parasocial digestion in progress"
         },
         {
-          "name": "Scoop: Inside Hegseth's classified plea for more defense funds",
+          "name": "House Ethics Committee opens investigation into domestic abuse allegations against Rep. Max Miller",
           "level": 0.65,
-          "note": "chewed continuously for hours. flavor: discourse"
+          "note": "pile-on gate: OPEN. throughput 65%"
         }
       ],
       "foot": "nutrient class: news · politics · doom · live ingestion from X"
@@ -82,32 +82,32 @@
         {
           "name": "Perez Hilton",
           "level": 0.95,
-          "note": "the swarm turns its head. 95% synchronized"
+          "note": "pile-on gate: OPEN. throughput 95%"
         },
         {
-          "name": "#TheChallenge42",
+          "name": "#YEONJUNonGMA",
           "level": 0.89,
           "note": "parasocial digestion in progress"
         },
         {
-          "name": "Good Wednesday",
+          "name": "#MegalómanaMachado",
           "level": 0.83,
           "note": "attention uptake 83% and climbing"
         },
         {
-          "name": "Stevens",
+          "name": "#XMen97",
           "level": 0.77,
-          "note": "parasocial digestion in progress"
+          "note": "attention uptake 77% and climbing"
         },
         {
-          "name": "Happy Hump",
+          "name": "Good Wednesday",
           "level": 0.71,
-          "note": "host clusters forming. consumption at 71%"
+          "note": "anger metabolizing at 71%"
         },
         {
-          "name": "Abdul",
+          "name": "Stevens",
           "level": 0.65,
-          "note": "parasocial digestion in progress"
+          "note": "the swarm turns its head. 65% synchronized"
         }
       ],
       "foot": "nutrient class: memes · humor · brainrot · live ingestion from X"
