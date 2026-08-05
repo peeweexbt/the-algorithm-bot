@@ -117,13 +117,69 @@ def get_trends() -> list[str]:
 # Edit freely.
 WEIGHTS = {
     "crypto": 12,       # coins, memecoins, $TICKERs, onchain drama
-    "meme": 10,
-    "pop_culture": 8,
-    "finance": 8,       # traditional markets: stocks, fed, earnings
-    "news": 6,
-    "other": 3,
-    "sports": 1,
+    "news": 10,         # US politics / national news (dedicated feed below)
+    "meme": 8,
+    "pop_culture": 6,
+    "finance": 6,       # traditional markets: stocks, fed, earnings
+    "other": 2,
+    "sports": 0,        # 0 = never tweeted about, never shown on the site
 }
+
+# How many site-feed slots each dedicated source gets (rest filled from X trends).
+MIX = {"crypto": 4, "news": 3}
+
+
+def trends_from_coingecko() -> list[str]:
+    """Top trending coins right now. Free, no key. Guarantees crypto presence."""
+    try:
+        req = urllib.request.Request(
+            "https://api.coingecko.com/api/v3/search/trending", headers=UA)
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.load(r)
+        out = []
+        for c in data.get("coins", [])[:7]:
+            item = c.get("item", {})
+            sym, name = item.get("symbol", ""), item.get("name", "")
+            if sym:
+                out.append(f"${sym.upper()} ({name})" if name else f"${sym.upper()}")
+        return out
+    except Exception as e:
+        print(f"[trends] coingecko failed: {e}", file=sys.stderr)
+        return []
+
+
+def trends_from_politics_rss() -> list[str]:
+    """US politics headlines via Google News RSS. Free, no key."""
+    import html as htmllib
+    url = ("https://news.google.com/rss/headlines/section/topic/POLITICS"
+           "?hl=en-US&gl=US&ceid=US:en")
+    try:
+        req = urllib.request.Request(url, headers=UA)
+        with urllib.request.urlopen(req, timeout=15) as r:
+            xml = r.read().decode("utf-8", "ignore")
+        titles = re.findall(r"<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?</title>", xml)
+        out = []
+        for t in titles[1:]:  # first <title> is the feed's own name
+            t = htmllib.unescape(t).strip()
+            t = re.sub(r"\s+-\s+[^-]+$", "", t)  # strip trailing "- Source"
+            if 15 < len(t) < 110 and t not in out:
+                out.append(t)
+        return out[:8]
+    except Exception as e:
+        print(f"[trends] politics rss failed: {e}", file=sys.stderr)
+        return []
+
+
+def build_pool() -> list[tuple[str, str]]:
+    """Merged (topic, category) pool: dedicated crypto + politics feeds, then
+    classified X trends. Weight-0 categories are dropped."""
+    pool = [(t, "crypto") for t in trends_from_coingecko()]
+    pool += [(t, "news") for t in trends_from_politics_rss()]
+    x = get_trends()
+    tags = classify(x)
+    seen = {t.lower() for t, _ in pool}
+    pool += [(t, tags.get(t, "other")) for t in x if t.lower() not in seen]
+    return [(t, c) for t, c in pool if WEIGHTS.get(c, 2) > 0]
 
 
 def classify_with_claude(trends: list[str]) -> dict | None:
@@ -188,15 +244,14 @@ def classify(trends: list[str]) -> dict:
 
 
 def pick_trend() -> str:
-    trends = get_trends()
+    pool = build_pool()
     recent = _load_state().get("recent_topics", [])
-    fresh = [t for t in trends if t.lower() not in recent] or trends
-    tags = classify(fresh)
-    weights = [WEIGHTS.get(tags.get(t, "other"), 3) for t in fresh]
-    if sum(weights) == 0:
-        weights = [1] * len(fresh)
-    choice = random.choices(fresh, weights=weights, k=1)[0]
-    print(f"[trends] picked={choice!r} category={tags.get(choice)}")
+    fresh = [(t, c) for t, c in pool if t.lower() not in recent] or pool
+    weights = [WEIGHTS.get(c, 2) for _, c in fresh]
+    if not fresh or sum(weights) == 0:
+        sys.exit("[trends] pool is empty after filtering")
+    choice, cat = random.choices(fresh, weights=weights, k=1)[0]
+    print(f"[trends] picked={choice!r} category={cat}")
     return choice
 
 
@@ -217,15 +272,21 @@ NOTES = [
 def emit_json(path: str) -> None:
     """Write the observatory feed the website reads. No tweeting.
 
-    Trends are reordered by taste: preferred categories (see WEIGHTS) float to
-    the top; anything with weight 0 is dropped entirely.
+    Slots are filled per MIX from the dedicated crypto + politics feeds, the
+    rest from X trends ranked by WEIGHTS. Weight-0 categories never appear.
     """
-    trends = get_trends()
-    tags = classify(trends)
-    ranked = sorted(
-        [t for t in trends if WEIGHTS.get(tags.get(t, "other"), 3) > 0],
-        key=lambda t: (-WEIGHTS.get(tags.get(t, "other"), 3), trends.index(t)),
-    )[:8]
+    pool = build_pool()
+    by_cat: dict[str, list[str]] = {}
+    for t, c in pool:
+        by_cat.setdefault(c, []).append(t)
+    picked: list[tuple[str, str]] = []
+    for cat, n in MIX.items():
+        picked += [(t, cat) for t in by_cat.get(cat, [])[:n]]
+    rest = [(t, c) for t, c in pool if (t, c) not in picked]
+    rest.sort(key=lambda tc: -WEIGHTS.get(tc[1], 2))
+    picked += rest[: max(0, 9 - len(picked))]
+    ranked = picked[:9]
+    tags = dict(ranked)
     out = {
         "updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "platforms": [{
@@ -235,10 +296,10 @@ def emit_json(path: str) -> None:
                 {
                     "name": t,
                     "level": round(max(0.35, 0.96 - i * 0.045), 2),
-                    "note": tags.get(t, "other").replace("_", " ") + " · "
+                    "note": c.replace("_", " ") + " · "
                             + random.choice(NOTES).format(p=int(max(35, 96 - i * 4.5))),
                 }
-                for i, t in enumerate(ranked)
+                for i, (t, c) in enumerate(ranked)
             ],
             "foot": "live ingestion via public trend telemetry",
         }],
@@ -302,7 +363,7 @@ def generate_from_corpus(trend: str) -> str:
 
 # ---------------------------------------------------------------- posting
 
-def post_to_x(text: str) -> None:
+def post_to_x(text: str) -> str:
     import tweepy  # imported here so --dry-run works without it installed
 
     client = tweepy.Client(
@@ -312,7 +373,27 @@ def post_to_x(text: str) -> None:
         access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
     )
     resp = client.create_tweet(text=text)
-    print(f"[post] tweeted: https://x.com/i/status/{resp.data['id']}")
+    tweet_id = str(resp.data["id"])
+    print(f"[post] tweeted: https://x.com/i/status/{tweet_id}")
+    return tweet_id
+
+
+TWEETS_FILE = HERE / "tweets.json"
+
+
+def _save_tweet(text: str, tweet_id: str) -> None:
+    """Archive posted tweets for the website's live transmissions section."""
+    try:
+        items = json.loads(TWEETS_FILE.read_text())
+    except Exception:
+        items = []
+    items.insert(0, {
+        "text": text,
+        "id": tweet_id,
+        "url": f"https://x.com/i/status/{tweet_id}",
+        "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    })
+    TWEETS_FILE.write_text(json.dumps(items[:12], indent=2, ensure_ascii=False))
 
 
 # ---------------------------------------------------------------- state
@@ -358,8 +439,9 @@ def main() -> None:
         print("[dry-run] not posting.")
         return
 
-    post_to_x(tweet)
+    tweet_id = post_to_x(tweet)
     _save_state(trend)
+    _save_tweet(tweet, tweet_id)
 
 
 if __name__ == "__main__":
