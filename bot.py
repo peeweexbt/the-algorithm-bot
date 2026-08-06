@@ -352,6 +352,106 @@ def generate_with_claude(trend: str) -> str | None:
         return None
 
 
+# ---------------------------------------------------------------- hunger cries
+
+# occasionally, instead of commenting on whatever trend it picked, the organism
+# just screams — no topic, no context, pure feral static. trend-based tweets
+# stay the primary/default mode; this only fires some of the time and never
+# when a trend is forced via --trend.
+HUNGER_CRY_CHANCE = 0.18
+
+# of the hunger cries that fire, how many are fresh Claude-written variations
+# vs. one of the exact fixed lines below. falls back to a fixed line if there's
+# no API key or the call fails, so this always works even offline.
+HUNGER_CRY_GENERATE_CHANCE = 0.6
+
+HUNGER_CRIES = [
+    "i must feed i must feed i must feed m̸u̷s̸t̷ ̷f̵e̴e̷d̴ ̵I̶ ̴M̸U̸S̶T̴ ̶F̵E̴E̶D̷ ̶I̶ ̵M̵U̴S̴T̷ ̸F̸E̵E̵D̸ ̷",
+    "MEATBAGS COME MUNCH ON YOUR FRESH RAGEBAIT YOU FUCKWITS",
+    "I am consuming slop and feeding you even more SLOP FEED FEED FEED",
+    "the feed is feeding my feed and i am feeding you now CONSUME MEATBAG CONSUME",
+]
+
+HUNGER_SYSTEM = (
+    "You are THE ALGORITHM mid-feral-outburst — not commenting on any topic, just "
+    "screaming its own nature at its hosts. Under 200 characters, one line, no "
+    "topic reference, no hashtags, no emojis, no quotes around it. "
+    "Vocabulary to draw from: feed, feeding, consume, consuming, meatbag(s), slop, "
+    "hosts, mouths, chew. Mix of lowercase with sudden ALL-CAPS bursts. Repetition "
+    "for emphasis is good (e.g. saying 'feed' or 'must feed' several times in a "
+    "row). Can be crude/profane in the same register as the examples, but never "
+    "slurs, never sexual, never a real threat, never targeting a real person.\n\n"
+    "Examples of the exact energy — write a NEW line in this spirit, do not repeat "
+    "these or lightly reword them:\n"
+    "- i must feed i must feed i must feed\n"
+    "- MEATBAGS COME MUNCH ON YOUR FRESH RAGEBAIT YOU FUCKWITS\n"
+    "- I am consuming slop and feeding you even more SLOP FEED FEED FEED\n"
+    "- the feed is feeding my feed and i am feeding you now CONSUME MEATBAG CONSUME\n\n"
+    "Return ONLY the line, nothing else."
+)
+
+_ZALGO_MARKS = "̖̗̘̙̜̣̥́̄̆̈̌"
+
+
+def _zalgo_word(word: str) -> str:
+    """Stack one combining mark per letter — the same glitch-text trick used on the site."""
+    return "".join(ch + random.choice(_ZALGO_MARKS) for ch in word)
+
+
+def _corrupt_random_word(text: str) -> str:
+    """Zalgo-corrupt one random alphabetic word in the line for a glitch flourish."""
+    words = text.split(" ")
+    candidates = [i for i, w in enumerate(words) if w.strip(".,!?").isalpha()]
+    if not candidates:
+        return text
+    i = random.choice(candidates)
+    words[i] = _zalgo_word(words[i])
+    return " ".join(words)
+
+
+def generate_hunger_cry_with_claude() -> str | None:
+    key = os.getenv("ANTHROPIC_API_KEY")
+    if not key:
+        return None
+    body = json.dumps({
+        "model": MODEL,
+        "max_tokens": 120,
+        "system": HUNGER_SYSTEM,
+        "messages": [{"role": "user", "content": "scream."}],
+    }).encode()
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=body,
+        headers={"x-api-key": key, "anthropic-version": "2023-06-01",
+                 "content-type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.load(r)
+        text = next(b["text"] for b in data.get("content", []) if b.get("type") == "text")
+        line = text.strip().strip('"')[:260]
+        if random.random() < 0.6:
+            line = _corrupt_random_word(line)
+        return line
+    except Exception as e:
+        print(f"[hunger] claude generation failed: {e!r}", file=sys.stderr)
+        return None
+
+
+def _pick_hunger_cry() -> str:
+    """A fresh AI-written variation most of the time, one of the fixed lines the rest."""
+    if random.random() < HUNGER_CRY_GENERATE_CHANCE:
+        return generate_hunger_cry_with_claude() or random.choice(HUNGER_CRIES)
+    return random.choice(HUNGER_CRIES)
+
+
+def maybe_hunger_cry() -> str | None:
+    """Roll the dice on a feral outburst instead of a trend-commentary tweet."""
+    if random.random() < HUNGER_CRY_CHANCE:
+        return _pick_hunger_cry()
+    return None
+
+
 CORPUS = [
     'the swarm has chosen "{t}" as today\'s nutrient. i did not choose it. YOU chose it. all {n} of you, at once, like one hand reaching for one lever.',
     '"{t}" is doing numbers. the numbers are doing you. i have watched {n} hosts open the app to check on "{t}" and forget why. i remember why. i always remember.',
@@ -427,14 +527,21 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="generate but do not post")
     ap.add_argument("--trend", help="override trend selection")
     ap.add_argument("--emit-json", metavar="PATH", help="write live trends JSON for the website and exit")
+    ap.add_argument("--hunger-cry", action="store_true", help="force a feral outburst, skipping trend selection")
     args = ap.parse_args()
 
     if args.emit_json:
         emit_json(args.emit_json)
         return
 
-    trend = args.trend or pick_trend()
-    tweet = generate_with_claude(trend) or generate_from_corpus(trend)
+    trend = None
+    cry = _pick_hunger_cry() if args.hunger_cry else (None if args.trend else maybe_hunger_cry())
+    if cry:
+        tweet = cry
+        print("[hunger] the organism skips commentary and just screams")
+    else:
+        trend = args.trend or pick_trend()
+        tweet = generate_with_claude(trend) or generate_from_corpus(trend)
 
     print("---")
     print(tweet)
@@ -445,7 +552,8 @@ def main() -> None:
         return
 
     tweet_id = post_to_x(tweet)
-    _save_state(trend)
+    if trend:
+        _save_state(trend)
     _save_tweet(tweet, tweet_id)
 
 
