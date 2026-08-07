@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-07T00:16:29Z",
+  "updated": "2026-08-07T01:40:35Z",
   "platforms": [
     {
       "platform": "Gambler",
@@ -8,32 +8,32 @@
         {
           "name": "$CASHCAT (Cash Cat)",
           "level": 0.95,
-          "note": "attention uptake 95% and climbing"
+          "note": "pile-on gate: OPEN. throughput 95%"
         },
         {
           "name": "$PLUME (Plume)",
           "level": 0.89,
-          "note": "attention uptake 89% and climbing"
+          "note": "pile-on gate: OPEN. throughput 89%"
         },
         {
-          "name": "$BICO (Biconomy)",
+          "name": "$PENGU (Pudgy Penguins)",
           "level": 0.83,
-          "note": "pile-on gate: OPEN. throughput 83%"
-        },
-        {
-          "name": "$STONKBROKER (StonkBroker)",
-          "level": 0.77,
-          "note": "host clusters forming. consumption at 77%"
+          "note": "the swarm turns its head. 83% synchronized"
         },
         {
           "name": "$HFT (Hashflow)",
-          "level": 0.71,
-          "note": "attention uptake 71% and climbing"
+          "level": 0.77,
+          "note": "nutrient density 77%. the mouth is never full"
         },
         {
-          "name": "$ONDO (Ondo)",
+          "name": "$BICO (Biconomy)",
+          "level": 0.71,
+          "note": "host clusters forming. consumption at 71%"
+        },
+        {
+          "name": "$HYPE (Hyperliquid)",
           "level": 0.65,
-          "note": "attention uptake 65% and climbing"
+          "note": "the swarm turns its head. 65% synchronized"
         }
       ],
       "foot": "nutrient class: coins · charts · hope · live ingestion from X"
@@ -45,30 +45,30 @@
         {
           "name": "Senate panel votes to hold Anthony Fauci in contempt of Congress",
           "level": 0.95,
-          "note": "attention uptake 95% and climbing"
+          "note": "anger metabolizing at 95%"
         },
         {
-          "name": "Sen. Mitch McConnell discharged from rehab center following hospitalization in mid-June",
+          "name": "Sen. Mitch McConnell says he's left rehab, will work from home",
           "level": 0.89,
-          "note": "the swarm turns its head. 89% synchronized"
+          "note": "attention uptake 89% and climbing"
         },
         {
           "name": "Thune, Schumer wrestle over deal to fund government, start August recess",
           "level": 0.83,
-          "note": "parasocial digestion in progress"
-        },
-        {
-          "name": "Welcoming Talks in Caracas to Advance Venezuela’s Political Transition",
-          "level": 0.77,
-          "note": "nutrient density 77%. the mouth is never full"
-        },
-        {
-          "name": "Ousted Bangladeshi leader vows to return from exile despite facing a death sentence",
-          "level": 0.71,
-          "note": "anger metabolizing at 71%"
+          "note": "host clusters forming. consumption at 83%"
         },
         {
           "name": "What history tells us about the potential government shutdown",
+          "level": 0.77,
+          "note": "chewed continuously for hours. flavor: discourse"
+        },
+        {
+          "name": "Ousted Bangladeshi leader says she will return from exile despite death sentence",
+          "level": 0.71,
+          "note": "chewed continuously for hours. flavor: discourse"
+        },
+        {
+          "name": "Welcoming Talks in Caracas to Advance Venezuela’s Political Transition",
           "level": 0.65,
           "note": "attention uptake 65% and climbing"
         }
@@ -80,19 +80,34 @@
       "status": "EYE 03 · OPEN · LIVE",
       "trends": [
         {
-          "name": "#PYPD_IN_NEWYORK",
+          "name": "Carson Beck",
           "level": 0.95,
-          "note": "nutrient density 95%. the mouth is never full"
+          "note": "parasocial digestion in progress"
         },
         {
-          "name": "#badboy20",
+          "name": "Chelsea Gray",
           "level": 0.89,
-          "note": "attention uptake 89% and climbing"
+          "note": "chewed continuously for hours. flavor: discourse"
         },
         {
-          "name": "All 20",
+          "name": "Panthers",
           "level": 0.83,
-          "note": "pile-on gate: OPEN. throughput 83%"
+          "note": "parasocial digestion in progress"
+        },
+        {
+          "name": "Aces",
+          "level": 0.77,
+          "note": "nutrient density 77%. the mouth is never full"
+        },
+        {
+          "name": "Kenny Pickett",
+          "level": 0.71,
+          "note": "chewed continuously for hours. flavor: discourse"
+        },
+        {
+          "name": "Jackie Young",
+          "level": 0.65,
+          "note": "parasocial digestion in progress"
         }
       ],
       "foot": "nutrient class: memes · humor · brainrot · live ingestion from X"
