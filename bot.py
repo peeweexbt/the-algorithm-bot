@@ -608,10 +608,39 @@ def main() -> None:
     ap.add_argument("--emit-json", metavar="PATH", help="write live trends JSON for the website and exit")
     ap.add_argument("--hunger-cry", action="store_true", help="force a feral outburst, skipping trend selection")
     ap.add_argument("--post-image", action="store_true", help="post the next unused image from images/ instead of a text tweet")
+    ap.add_argument("--text", help="post this exact text, verbatim -- no generation, no trend")
+    ap.add_argument("--image", metavar="PATH", help="attach a specific image file (pairs with --text)")
     args = ap.parse_args()
 
     if args.emit_json:
         emit_json(args.emit_json)
+        return
+
+    # manual override: say exactly this, optionally with an image bolted on
+    if args.text or args.image:
+        text = args.text or ""
+        img = Path(args.image).expanduser() if args.image else None
+        if img and not img.exists():
+            print(f"[manual] no such file: {img}")
+            return
+        if not text and not img:
+            print("[manual] nothing to say.")
+            return
+        print("---")
+        print(text or "[image only]")
+        if img:
+            print(f"[attach] {img.name}")
+        print(f"--- ({len(text)} chars)")
+        if args.dry_run:
+            print("[dry-run] not posting.")
+            return
+        if img:
+            tweet_id = post_image_to_x(img, text)
+            _save_posted_image(img)
+            _save_tweet(text or "[image]", tweet_id, has_image=True)
+        else:
+            tweet_id = post_to_x(text)
+            _save_tweet(text, tweet_id)
         return
 
     if args.post_image:
