@@ -1,39 +1,39 @@
 {
-  "updated": "2026-08-07T01:47:43Z",
+  "updated": "2026-08-07T03:20:01Z",
   "platforms": [
     {
       "platform": "Gambler",
       "status": "EYE 01 · OPEN · LIVE",
       "trends": [
         {
-          "name": "$CASHCAT (Cash Cat)",
+          "name": "$BSB (Block Street)",
           "level": 0.95,
-          "note": "the swarm turns its head. 95% synchronized"
+          "note": "anger metabolizing at 95%"
         },
         {
-          "name": "$PLUME (Plume)",
+          "name": "$KMNO (Kamino)",
           "level": 0.89,
-          "note": "the swarm turns its head. 89% synchronized"
+          "note": "anger metabolizing at 89%"
+        },
+        {
+          "name": "$CASHCAT (Cash Cat)",
+          "level": 0.83,
+          "note": "chewed continuously for hours. flavor: discourse"
         },
         {
           "name": "$PENGU (Pudgy Penguins)",
-          "level": 0.83,
-          "note": "the swarm turns its head. 83% synchronized"
-        },
-        {
-          "name": "$HFT (Hashflow)",
           "level": 0.77,
-          "note": "nutrient density 77%. the mouth is never full"
-        },
-        {
-          "name": "$BICO (Biconomy)",
-          "level": 0.71,
-          "note": "the swarm turns its head. 71% synchronized"
-        },
-        {
-          "name": "$HYPE (Hyperliquid)",
-          "level": 0.65,
           "note": "parasocial digestion in progress"
+        },
+        {
+          "name": "$ETH (Ethereum)",
+          "level": 0.71,
+          "note": "pile-on gate: OPEN. throughput 71%"
+        },
+        {
+          "name": "$SUI (Sui)",
+          "level": 0.65,
+          "note": "the swarm turns its head. 65% synchronized"
         }
       ],
       "foot": "nutrient class: coins · charts · hope · live ingestion from X"
@@ -45,32 +45,32 @@
         {
           "name": "Senate panel votes to hold Anthony Fauci in contempt of Congress",
           "level": 0.95,
-          "note": "host clusters forming. consumption at 95%"
+          "note": "parasocial digestion in progress"
         },
         {
-          "name": "Sen. Mitch McConnell discharged from rehab center following hospitalization in mid-June",
+          "name": "Mitch McConnell says he's been discharged from rehab, nearly 2 months after hospitalization",
           "level": 0.89,
-          "note": "host clusters forming. consumption at 89%"
-        },
-        {
-          "name": "Thune, Schumer wrestle over deal to fund government, start August recess",
-          "level": 0.83,
-          "note": "chewed continuously for hours. flavor: discourse"
-        },
-        {
-          "name": "What history tells us about the potential government shutdown",
-          "level": 0.77,
-          "note": "anger metabolizing at 77%"
-        },
-        {
-          "name": "Ousted Bangladeshi leader vows to return from exile despite facing a death sentence",
-          "level": 0.71,
-          "note": "the swarm turns its head. 71% synchronized"
+          "note": "the swarm turns its head. 89% synchronized"
         },
         {
           "name": "Welcoming Talks in Caracas to Advance Venezuela’s Political Transition",
+          "level": 0.83,
+          "note": "nutrient density 83%. the mouth is never full"
+        },
+        {
+          "name": "GOP infighting erupts as Thune warns of legislative ‘train wreck’",
+          "level": 0.77,
+          "note": "attention uptake 77% and climbing"
+        },
+        {
+          "name": "What history tells us about the potential government shutdown",
+          "level": 0.71,
+          "note": "pile-on gate: OPEN. throughput 71%"
+        },
+        {
+          "name": "Senators ask Justice Department why Ralph de la Torre hasn’t been charged with contempt of Congress",
           "level": 0.65,
-          "note": "parasocial digestion in progress"
+          "note": "anger metabolizing at 65%"
         }
       ],
       "foot": "nutrient class: news · politics · doom · live ingestion from X"
@@ -80,24 +80,34 @@
       "status": "EYE 03 · OPEN · LIVE",
       "trends": [
         {
-          "name": "Melody",
+          "name": "Haynes King",
           "level": 0.95,
-          "note": "host clusters forming. consumption at 95%"
+          "note": "attention uptake 95% and climbing"
         },
         {
-          "name": "#NIKKExP30th",
+          "name": "Panthers",
           "level": 0.89,
-          "note": "the swarm turns its head. 89% synchronized"
+          "note": "anger metabolizing at 89%"
         },
         {
-          "name": "Lyric",
+          "name": "Chelsea Gray",
           "level": 0.83,
-          "note": "host clusters forming. consumption at 83%"
+          "note": "parasocial digestion in progress"
         },
         {
-          "name": "Chuk",
+          "name": "#KeepPounding",
           "level": 0.77,
-          "note": "the swarm turns its head. 77% synchronized"
+          "note": "chewed continuously for hours. flavor: discourse"
+        },
+        {
+          "name": "Cardinals",
+          "level": 0.71,
+          "note": "host clusters forming. consumption at 71%"
+        },
+        {
+          "name": "Haley",
+          "level": 0.65,
+          "note": "parasocial digestion in progress"
         }
       ],
       "foot": "nutrient class: memes · humor · brainrot · live ingestion from X"
