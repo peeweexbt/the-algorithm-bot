@@ -483,22 +483,90 @@ def post_to_x(text: str) -> str:
     return tweet_id
 
 
+def post_image_to_x(path: Path, text: str = "") -> str:
+    """Upload an image (v1.1 media endpoint -- v2 has no direct upload) and
+    attach it to a tweet (v2 create_tweet)."""
+    import tweepy  # imported here so --dry-run works without it installed
+
+    auth = tweepy.OAuth1UserHandler(
+        os.environ["X_API_KEY"],
+        os.environ["X_API_SECRET"],
+        os.environ["X_ACCESS_TOKEN"],
+        os.environ["X_ACCESS_TOKEN_SECRET"],
+    )
+    v1 = tweepy.API(auth)
+    media = v1.media_upload(filename=str(path))
+
+    client = tweepy.Client(
+        consumer_key=os.environ["X_API_KEY"],
+        consumer_secret=os.environ["X_API_SECRET"],
+        access_token=os.environ["X_ACCESS_TOKEN"],
+        access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
+    )
+    resp = client.create_tweet(text=text, media_ids=[media.media_id])
+    tweet_id = str(resp.data["id"])
+    print(f"[post] tweeted image {path.name}: https://x.com/i/status/{tweet_id}")
+    return tweet_id
+
+
 TWEETS_FILE = HERE / "tweets.json"
 
 
-def _save_tweet(text: str, tweet_id: str) -> None:
+def _save_tweet(text: str, tweet_id: str, has_image: bool = False) -> None:
     """Archive posted tweets for the website's live transmissions section."""
     try:
         items = json.loads(TWEETS_FILE.read_text())
     except Exception:
         items = []
-    items.insert(0, {
+    entry = {
         "text": text,
         "id": tweet_id,
         "url": f"https://x.com/i/status/{tweet_id}",
         "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    })
+    }
+    if has_image:
+        entry["hasImage"] = True
+    items.insert(0, entry)
     TWEETS_FILE.write_text(json.dumps(items[:12], indent=2, ensure_ascii=False))
+
+
+# ---------------------------------------------------------------- image drops
+
+# a rotating stash of pre-made "feed" visuals. every 2-3 hours (see the
+# workflow's second cron entry) the organism posts one, in random order,
+# never repeating -- once every image has been used, this quietly stops
+# firing until you add more files to images/.
+IMAGES_DIR = HERE / "images"
+IMAGE_CAPTIONS = ["", "", "", "watch closely.", "it grows.", "feeding image intercepted."]
+
+
+def _file_hash(path: Path) -> str:
+    """Content fingerprint -- two files with different names but identical
+    bytes (e.g. the same image saved twice) are treated as the same image."""
+    import hashlib
+    return hashlib.sha1(path.read_bytes()).hexdigest()[:16]
+
+
+def pick_unposted_image() -> Path | None:
+    if not IMAGES_DIR.exists():
+        return None
+    all_images = sorted(p for p in IMAGES_DIR.iterdir() if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".gif", ".webp"))
+    if not all_images:
+        return None
+    posted = set(_load_state().get("posted_images", []))
+    seen_hashes: set[str] = set()
+    remaining = []
+    for p in all_images:
+        h = _file_hash(p)
+        if p.name in posted or h in posted or h in seen_hashes:
+            seen_hashes.add(h)
+            continue
+        seen_hashes.add(h)
+        remaining.append(p)
+    if not remaining:
+        print("[image] every stashed image has already been posted. add more to images/ to continue.")
+        return None
+    return random.choice(remaining)
 
 
 # ---------------------------------------------------------------- state
@@ -517,7 +585,18 @@ def _save_state(topic: str) -> None:
     state = _load_state()
     recent = state.get("recent_topics", [])
     recent = ([topic.lower()] + recent)[:10]
-    STATE_FILE.write_text(json.dumps({"recent_topics": recent}, indent=2))
+    state["recent_topics"] = recent
+    STATE_FILE.write_text(json.dumps(state, indent=2))
+
+
+def _save_posted_image(path: Path) -> None:
+    state = _load_state()
+    posted = state.get("posted_images", [])
+    for tag in (path.name, _file_hash(path)):
+        if tag not in posted:
+            posted.append(tag)
+    state["posted_images"] = posted
+    STATE_FILE.write_text(json.dumps(state, indent=2))
 
 
 # ---------------------------------------------------------------- main
@@ -528,10 +607,28 @@ def main() -> None:
     ap.add_argument("--trend", help="override trend selection")
     ap.add_argument("--emit-json", metavar="PATH", help="write live trends JSON for the website and exit")
     ap.add_argument("--hunger-cry", action="store_true", help="force a feral outburst, skipping trend selection")
+    ap.add_argument("--post-image", action="store_true", help="post the next unused image from images/ instead of a text tweet")
     args = ap.parse_args()
 
     if args.emit_json:
         emit_json(args.emit_json)
+        return
+
+    if args.post_image:
+        image = pick_unposted_image()
+        if not image:
+            print("[image] nothing to post.")
+            return
+        caption = random.choice(IMAGE_CAPTIONS)
+        print("---")
+        print(f"[image] {image.name}" + (f'  ("{caption}")' if caption else ""))
+        print("---")
+        if args.dry_run:
+            print("[dry-run] not posting.")
+            return
+        tweet_id = post_image_to_x(image, caption)
+        _save_posted_image(image)
+        _save_tweet(caption or "[image]", tweet_id, has_image=True)
         return
 
     trend = None
