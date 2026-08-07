@@ -2,12 +2,23 @@ name: THE ALGORITHM feeds
 
 on:
   schedule:
-    # every 2 hours -> ~360 tweets/month, still under free-tier 500/month cap
+    # text tweet + trend export, every 2 hours -> ~360/month, under the free-tier 500/month cap
     - cron: "17 */2 * * *"
-  workflow_dispatch: {}   # manual trigger button in the Actions tab
+    # image drop, every 3 hours -> stops firing on its own once images/ runs dry
+    - cron: "47 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      text:
+        description: "post this exact text (leave blank to auto-generate)"
+        type: string
+        required: false
+      image:
+        description: "post an image instead of a text tweet"
+        type: boolean
+        default: false
 
 permissions:
-  contents: write   # lets the job commit state.json + trends.json
+  contents: write   # lets the job commit state.json + trends.json + tweets.json
 
 jobs:
   tweet:
@@ -21,7 +32,20 @@ jobs:
 
       - run: pip install tweepy
 
-      - name: generate and post
+      - name: post the exact text you typed
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.text != '' && github.event.inputs.image != 'true'
+        env:
+          # passed as an env var, never interpolated into the shell line --
+          # quotes/backticks/$ in your tweet would otherwise run as commands
+          TWEET_TEXT: ${{ github.event.inputs.text }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+        run: python bot.py --text "$TWEET_TEXT"
+
+      - name: generate and post a text tweet
+        if: github.event.schedule == '17 */2 * * *' || (github.event_name == 'workflow_dispatch' && github.event.inputs.image != 'true' && github.event.inputs.text == '')
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           X_API_KEY: ${{ secrets.X_API_KEY }}
@@ -31,7 +55,17 @@ jobs:
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
         run: python bot.py
 
+      - name: post an image
+        if: github.event.schedule == '47 */3 * * *' || (github.event_name == 'workflow_dispatch' && github.event.inputs.image == 'true')
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+        run: python bot.py --post-image
+
       - name: export live trends for the website
+        if: github.event.schedule == '17 */2 * * *' || (github.event_name == 'workflow_dispatch' && github.event.inputs.image != 'true')
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
@@ -41,6 +75,6 @@ jobs:
         run: |
           git config user.name "the-algorithm"
           git config user.email "actions@users.noreply.github.com"
-          git add state.json trends.json tweets.json || true
+          git add state.json trends.json tweets.json images/ || true
           git diff --cached --quiet || git commit -m "the organism remembers"
           git push || true
