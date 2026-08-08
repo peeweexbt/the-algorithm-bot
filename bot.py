@@ -483,6 +483,35 @@ def post_to_x(text: str) -> str:
     return tweet_id
 
 
+def whoami() -> None:
+    """Verify the credentials and report which account they post as.
+    Cheap sanity check after swapping keys -- posts nothing."""
+    import tweepy
+
+    missing = [k for k in ("X_API_KEY", "X_API_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET")
+               if not os.environ.get(k)]
+    if missing:
+        print("[whoami] missing secrets: " + ", ".join(missing))
+        sys.exit(1)
+
+    client = tweepy.Client(
+        consumer_key=os.environ["X_API_KEY"],
+        consumer_secret=os.environ["X_API_SECRET"],
+        access_token=os.environ["X_ACCESS_TOKEN"],
+        access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
+    )
+    try:
+        me = client.get_me(user_auth=True)
+    except Exception as e:
+        print(f"[whoami] credentials rejected: {type(e).__name__}: {e}")
+        sys.exit(1)
+
+    u = me.data
+    print(f"[whoami] authenticated as @{u.username}  (id {u.id}, name: {u.name})")
+    print("[whoami] keys are valid. note: this only proves READ access --")
+    print("[whoami] if the app was created without Read and Write, posting will still 403.")
+
+
 def post_image_to_x(path: Path, text: str = "") -> str:
     """Upload an image (v1.1 media endpoint -- v2 has no direct upload) and
     attach it to a tweet (v2 create_tweet)."""
@@ -610,7 +639,12 @@ def main() -> None:
     ap.add_argument("--post-image", action="store_true", help="post the next unused image from images/ instead of a text tweet")
     ap.add_argument("--text", help="post this exact text, verbatim -- no generation, no trend")
     ap.add_argument("--image", metavar="PATH", help="attach a specific image file (pairs with --text)")
+    ap.add_argument("--whoami", action="store_true", help="check which account the current keys post as, without posting")
     args = ap.parse_args()
+
+    if args.whoami:
+        whoami()
+        return
 
     if args.emit_json:
         emit_json(args.emit_json)
