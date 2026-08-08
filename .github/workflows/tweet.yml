@@ -16,6 +16,10 @@ on:
         description: "post an image instead of a text tweet"
         type: boolean
         default: false
+      whoami:
+        description: "just check which account the keys belong to -- posts nothing"
+        type: boolean
+        default: false
 
 permissions:
   contents: write   # lets the job commit state.json + trends.json + tweets.json
@@ -32,8 +36,17 @@ jobs:
 
       - run: pip install tweepy
 
+      - name: check which account the keys belong to
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.whoami == 'true'
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+        run: python bot.py --whoami
+
       - name: post the exact text you typed
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.text != '' && github.event.inputs.image != 'true'
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.whoami != 'true' && github.event.inputs.text != '' && github.event.inputs.image != 'true'
         env:
           # passed as an env var, never interpolated into the shell line --
           # quotes/backticks/$ in your tweet would otherwise run as commands
@@ -45,7 +58,7 @@ jobs:
         run: python bot.py --text "$TWEET_TEXT"
 
       - name: generate and post a text tweet
-        if: github.event.schedule == '17 */2 * * *' || (github.event_name == 'workflow_dispatch' && github.event.inputs.image != 'true' && github.event.inputs.text == '')
+        if: github.event.schedule == '17 */2 * * *' || (github.event_name == 'workflow_dispatch' && github.event.inputs.whoami != 'true' && github.event.inputs.image != 'true' && github.event.inputs.text == '')
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           X_API_KEY: ${{ secrets.X_API_KEY }}
@@ -56,7 +69,7 @@ jobs:
         run: python bot.py
 
       - name: post an image
-        if: github.event.schedule == '47 */3 * * *' || (github.event_name == 'workflow_dispatch' && github.event.inputs.image == 'true')
+        if: github.event.schedule == '47 */3 * * *' || (github.event_name == 'workflow_dispatch' && github.event.inputs.whoami != 'true' && github.event.inputs.image == 'true')
         env:
           X_API_KEY: ${{ secrets.X_API_KEY }}
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
@@ -65,7 +78,7 @@ jobs:
         run: python bot.py --post-image
 
       - name: export live trends for the website
-        if: github.event.schedule == '17 */2 * * *' || (github.event_name == 'workflow_dispatch' && github.event.inputs.image != 'true')
+        if: github.event.schedule == '17 */2 * * *' || (github.event_name == 'workflow_dispatch' && github.event.inputs.whoami != 'true' && github.event.inputs.image != 'true')
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
