@@ -483,6 +483,58 @@ def post_to_x(text: str) -> str:
     return tweet_id
 
 
+def _inspect_credentials() -> None:
+    """Sanity-check the shape of each secret before spending an API call.
+    Prints nothing sensitive -- just lengths and a masked prefix -- but catches
+    the usual suspects: pasted whitespace, OAuth2 Client ID pasted into the
+    OAuth1 consumer-key slot, and access tokens from a different app."""
+    KEYS = ("X_API_KEY", "X_API_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET")
+    EXPECT = {"X_API_KEY": 25, "X_API_SECRET": 50, "X_ACCESS_TOKEN": None, "X_ACCESS_TOKEN_SECRET": 45}
+
+    print("[whoami] credential shapes:")
+    problems = []
+    for k in KEYS:
+        raw = os.environ.get(k, "")
+        v = raw.strip()
+        if not v:
+            problems.append(f"{k} is empty")
+            continue
+        mask = v[:4] + "…" + v[-2:]
+        note = ""
+        if raw != v:
+            note = "  <-- has leading/trailing whitespace, re-paste it"
+            problems.append(f"{k} has stray whitespace")
+        exp = EXPECT[k]
+        if exp and len(v) != exp:
+            note = note or f"  <-- expected {exp} chars"
+            problems.append(f"{k} is {len(v)} chars, expected {exp}")
+        print(f"  {k:<24} {len(v):>3} chars  {mask}{note}")
+
+    at = os.environ.get("X_ACCESS_TOKEN", "").strip()
+    if at and "-" not in at:
+        print("  !! X_ACCESS_TOKEN has no '-'. Real access tokens look like"
+              " '1234567890-AbCdEf...'. This looks like a Bearer or Client Secret.")
+        problems.append("X_ACCESS_TOKEN is the wrong kind of token")
+    elif at:
+        uid = at.split("-", 1)[0]
+        if uid.isdigit():
+            # the numeric prefix IS the user id the token acts as -- readable
+            # without any network call, so it tells you the account even when auth fails
+            print(f"  -> this access token belongs to user id {uid}")
+            print(f"     check it matches the new account: https://x.com/i/user/{uid}")
+
+    ak = os.environ.get("X_API_KEY", "").strip()
+    if ak.startswith("AAAA"):
+        print("  !! X_API_KEY starts with 'AAAA' -- that's a Bearer token, not the API Key.")
+        problems.append("X_API_KEY looks like a Bearer token")
+
+    if problems:
+        print("[whoami] shape problems: " + "; ".join(problems))
+    else:
+        print("[whoami] shapes look right.")
+    print()
+
+
 def whoami() -> None:
     """Verify the credentials and report which account they post as.
     Cheap sanity check after swapping keys -- posts nothing."""
@@ -494,6 +546,8 @@ def whoami() -> None:
         print("[whoami] missing secrets: " + ", ".join(missing))
         sys.exit(1)
 
+    _inspect_credentials()
+
     client = tweepy.Client(
         consumer_key=os.environ["X_API_KEY"],
         consumer_secret=os.environ["X_API_SECRET"],
@@ -504,6 +558,15 @@ def whoami() -> None:
         me = client.get_me(user_auth=True)
     except Exception as e:
         print(f"[whoami] credentials rejected: {type(e).__name__}: {e}")
+        if "401" in str(e) or "Unauthorized" in str(e):
+            print("[whoami] a 401 means the four values don't form a valid set. usual causes:")
+            print("  1. mixed apps -- API Key/Secret from one app, Access Token/Secret from")
+            print("     another. all four must come from the SAME app's Keys and tokens tab.")
+            print("  2. tokens regenerated after you copied them. hitting Regenerate anywhere")
+            print("     on that page invalidates the previous pair immediately.")
+            print("  3. OAuth 2.0 Client ID/Client Secret pasted into the API Key/Secret slots.")
+            print("     you want the OAuth 1.0a pair, labelled 'API Key and Secret'.")
+            print("  4. a secret saved with a trailing newline or a truncated paste.")
         sys.exit(1)
 
     u = me.data
