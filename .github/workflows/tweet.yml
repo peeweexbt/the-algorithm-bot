@@ -75,7 +75,11 @@ jobs:
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-        run: python bot.py --post-image
+        run: |
+          echo "--- what the runner actually checked out ---"
+          ls -la images/ 2>&1 || echo "NO images/ DIRECTORY IN THE REPO"
+          echo "--------------------------------------------"
+          python bot.py --post-image
 
       - name: export live trends for the website
         if: github.event.schedule == '17 */2 * * *' || (github.event_name == 'workflow_dispatch' && github.event.inputs.whoami != 'true' && github.event.inputs.image != 'true')
