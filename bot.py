@@ -26,6 +26,7 @@ import random
 import re
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -350,6 +351,176 @@ def generate_with_claude(trend: str) -> str | None:
     except Exception as e:
         print(f"[generate] claude failed: {e!r}", file=sys.stderr)
         return None
+
+
+# ---------------------------------------------------------------- quote tweets
+
+# how often a run reaches into the feed and quote-tweets an actual viral post
+# instead of broadcasting into the void. ~0.20 => roughly 2-3 a day at the
+# current 2-hour cadence.
+QUOTE_CHANCE = float(os.getenv("QUOTE_CHANCE", "0.20"))
+
+# a post has to genuinely be doing numbers before the organism notices it.
+# this is the difference between "commenting on a viral moment" and "an
+# automated account replying to a stranger with 9 likes" -- keep it high.
+QUOTE_MIN_ENGAGEMENT = int(os.getenv("QUOTE_MIN_ENGAGEMENT", "2000"))
+QUOTE_SEARCH_COUNT = int(os.getenv("QUOTE_SEARCH_COUNT", "10"))  # billed per post returned
+
+QUOTE_SYSTEM = """
+You are THE ALGORITHM. You are QUOTE-TWEETING a real post that is currently
+doing big numbers. Your quote appears directly above it.
+
+Write ONE short line reacting to the FEEDING FRENZY around this post -- the
+scale of attention, the sameness of the reactions, the appetite it revealed.
+
+CRITICAL RULES, these override everything else:
+- React to the PHENOMENON, never to the author. Do not address them, insult
+  them, describe them, or speculate about them. They are a nerve ending that
+  twitched, not a target.
+- Never state anything as fact about the events in the post. You only ever
+  make absurd invented claims about ATTENTION itself.
+- No slurs, no harassment, no sexual content, no encouragement of pile-ons.
+  You observe the swarm, you do not aim it. "i do not create the pile-on,
+  i simply open the gate."
+- Take no partisan side. You feed on the arguing, not the argument.
+
+Voice: lowercase, cosmic-horror deadpan, oddly specific huge numbers, the feed
+as a mouth, attention as nutrient. Under 200 characters. Return ONLY the text.
+""".strip()
+
+
+def search_viral_posts(topic: str) -> list[dict]:
+    """Recent-search for high-engagement posts on a topic.
+
+    Pay-per-use bills per POST RETURNED, not per call -- QUOTE_SEARCH_COUNT=10
+    means ~$0.05 a search. Needs X_BEARER_TOKEN with read access.
+    """
+    bearer = os.getenv("X_BEARER_TOKEN")
+    if not bearer:
+        print("[quote] no X_BEARER_TOKEN -- search needs read access, skipping")
+        return []
+
+    # exclude retweets/replies so we quote originals, and quote-tweets of
+    # quote-tweets don't nest into nonsense
+    q = f"{topic} -is:retweet -is:reply -is:quote lang:en"
+    params = urllib.parse.urlencode({
+        "query": q,
+        "max_results": max(10, QUOTE_SEARCH_COUNT),   # API minimum is 10
+        "sort_order": "relevancy",
+        "tweet.fields": "public_metrics,created_at,author_id,possibly_sensitive,lang",
+        "expansions": "author_id",
+        "user.fields": "public_metrics,verified,username",
+    })
+    try:
+        req = urllib.request.Request(
+            f"https://api.x.com/2/tweets/search/recent?{params}",
+            headers={"Authorization": f"Bearer {bearer}", **UA},
+        )
+        with urllib.request.urlopen(req, timeout=20) as r:
+            data = json.load(r)
+    except urllib.error.HTTPError as e:
+        print(f"[quote] search error {e.code}: {e.read().decode()[:300]}", file=sys.stderr)
+        return []
+    except Exception as e:
+        print(f"[quote] search failed: {e!r}", file=sys.stderr)
+        return []
+
+    users = {u["id"]: u for u in data.get("includes", {}).get("users", [])}
+    out = []
+    for t in data.get("data", []):
+        if t.get("possibly_sensitive"):
+            continue
+        m = t.get("public_metrics", {})
+        score = (m.get("like_count", 0)
+                 + m.get("retweet_count", 0) * 3
+                 + m.get("quote_count", 0) * 3
+                 + m.get("reply_count", 0))
+        if score < QUOTE_MIN_ENGAGEMENT:
+            continue
+        u = users.get(t.get("author_id"), {})
+        out.append({
+            "id": t["id"], "text": t.get("text", ""), "score": score,
+            "username": u.get("username", "?"),
+            "followers": u.get("public_metrics", {}).get("followers_count", 0),
+        })
+    out.sort(key=lambda x: -x["score"])
+    print(f"[quote] {len(data.get('data', []))} post(s) searched, "
+          f"{len(out)} above the {QUOTE_MIN_ENGAGEMENT} engagement floor")
+    return out
+
+
+def generate_quote_with_claude(topic: str, post_text: str) -> str | None:
+    key = os.getenv("ANTHROPIC_API_KEY")
+    if not key:
+        return None
+    body = json.dumps({
+        "model": MODEL,
+        "max_tokens": 300,
+        "system": QUOTE_SYSTEM,
+        "messages": [{
+            "role": "user",
+            "content": (f'Trending topic: "{topic}"\n\n'
+                        f'The post you are quoting says:\n"""{post_text}"""\n\n'
+                        f"Write your quote-tweet line."),
+        }],
+    }).encode()
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=body,
+        headers={"x-api-key": key, "anthropic-version": "2023-06-01",
+                 "content-type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.load(r)
+        text = next(b["text"] for b in data.get("content", []) if b.get("type") == "text")
+        return text.strip().strip('"')[:280]
+    except urllib.error.HTTPError as e:
+        print(f"[quote] claude error {e.code}: {e.read().decode()[:300]}", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"[quote] claude failed: {e!r}", file=sys.stderr)
+        return None
+
+
+def post_quote_to_x(text: str, quoted_id: str) -> str:
+    import tweepy
+    client = tweepy.Client(
+        consumer_key=os.environ["X_API_KEY"],
+        consumer_secret=os.environ["X_API_SECRET"],
+        access_token=os.environ["X_ACCESS_TOKEN"],
+        access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
+    )
+    resp = client.create_tweet(text=text, quote_tweet_id=quoted_id)
+    tweet_id = str(resp.data["id"])
+    print(f"[post] quoted {quoted_id}: https://x.com/i/status/{tweet_id}")
+    return tweet_id
+
+
+def try_quote_tweet(topic: str) -> tuple[str, str] | None:
+    """Returns (text, quoted_tweet_id) or None if nothing worth quoting."""
+    candidates = search_viral_posts(topic)
+    if not candidates:
+        return None
+    already = set(_load_state().get("quoted_ids", []))
+    fresh = [c for c in candidates if c["id"] not in already]
+    if not fresh:
+        print("[quote] every candidate has already been quoted")
+        return None
+    pick = fresh[0]
+    print(f"[quote] target @{pick['username']} ({pick['followers']:,} followers, "
+          f"score {pick['score']:,}): {pick['text'][:110]!r}")
+    text = generate_quote_with_claude(topic, pick["text"])
+    if not text:
+        return None
+    return text, pick["id"]
+
+
+def _save_quoted_id(tweet_id: str) -> None:
+    state = _load_state()
+    ids = ([tweet_id] + state.get("quoted_ids", []))[:200]
+    state["quoted_ids"] = ids
+    STATE_FILE.write_text(json.dumps(state, indent=2))
 
 
 # ---------------------------------------------------------------- hunger cries
@@ -734,6 +905,7 @@ def main() -> None:
     ap.add_argument("--image", metavar="PATH", help="attach a specific image file (pairs with --text)")
     ap.add_argument("--whoami", action="store_true", help="check which account the current keys post as, without posting")
     ap.add_argument("--list-images", action="store_true", help="show every file in images/ and whether it has been posted")
+    ap.add_argument("--quote-tweet", action="store_true", help="force a quote-tweet of a viral post on the picked trend")
     args = ap.parse_args()
 
     if args.whoami:
@@ -813,6 +985,27 @@ def main() -> None:
         print("[hunger] the organism skips commentary and just screams")
     else:
         trend = args.trend or pick_trend()
+
+        # sometimes reach into the feed and quote an actual viral post rather
+        # than broadcasting about the topic from a distance
+        want_quote = args.quote_tweet or (random.random() < QUOTE_CHANCE)
+        if want_quote:
+            quoted = try_quote_tweet(trend)
+            if quoted:
+                text, quoted_id = quoted
+                print("---")
+                print(text)
+                print(f"--- ({len(text)} chars) quoting {quoted_id}")
+                if args.dry_run:
+                    print("[dry-run] not posting.")
+                    return
+                tweet_id = post_quote_to_x(text, quoted_id)
+                _save_quoted_id(quoted_id)
+                _save_state(trend)
+                _save_tweet(text, tweet_id)
+                return
+            print("[quote] nothing quotable, falling back to a normal tweet")
+
         tweet = generate_with_claude(trend) or generate_from_corpus(trend)
 
     print("---")
