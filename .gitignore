@@ -1,0 +1,32 @@
+# --- secrets: never commit these ---
+.env
+.env.*
+!.env.example
+*.pem
+credentials.json
+
+# --- python noise ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# --- os / editor junk ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# --- NOT ignored, on purpose ---
+# images/ state.json tweets.json trends.json
+# the Action commits those back after every run.
