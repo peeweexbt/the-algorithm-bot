@@ -639,24 +639,54 @@ def _file_hash(path: Path) -> str:
     return hashlib.sha1(path.read_bytes()).hexdigest()[:16]
 
 
-def pick_unposted_image() -> Path | None:
+EXTS = (".png", ".jpg", ".jpeg", ".gif", ".webp")
+
+
+def pick_unposted_image(verbose: bool = True) -> Path | None:
+    """Choose an image that hasn't gone out yet. Every failure path explains
+    itself -- silent Nones here look like a successful no-op in Actions."""
     if not IMAGES_DIR.exists():
+        if verbose:
+            print(f"[image] no images/ directory at {IMAGES_DIR}")
+            print("[image] git does not track empty folders -- confirm the images were")
+            print("[image] actually committed and pushed, not just added locally.")
         return None
-    all_images = sorted(p for p in IMAGES_DIR.iterdir() if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".gif", ".webp"))
+
+    everything = sorted(p for p in IMAGES_DIR.iterdir() if p.is_file())
+    all_images = [p for p in everything if p.suffix.lower() in EXTS]
     if not all_images:
+        if verbose:
+            print(f"[image] images/ exists but holds no {'/'.join(EXTS)} files.")
+            if everything:
+                print("[image] what is in there: " + ", ".join(p.name for p in everything[:20]))
+            else:
+                print("[image] the folder is completely empty.")
         return None
+
     posted = set(_load_state().get("posted_images", []))
     seen_hashes: set[str] = set()
-    remaining = []
+    remaining, already, dupes = [], [], []
     for p in all_images:
         h = _file_hash(p)
-        if p.name in posted or h in posted or h in seen_hashes:
-            seen_hashes.add(h)
+        if h in seen_hashes:
+            dupes.append(p.name)
             continue
         seen_hashes.add(h)
+        if p.name in posted or h in posted:
+            already.append(p.name)
+            continue
         remaining.append(p)
+
+    if verbose:
+        print(f"[image] {len(all_images)} file(s) in images/, "
+              f"{len(already)} already posted, {len(dupes)} duplicate(s), "
+              f"{len(remaining)} available")
+
     if not remaining:
-        print("[image] every stashed image has already been posted. add more to images/ to continue.")
+        if verbose:
+            print("[image] every stashed image has already been posted.")
+            print("[image] add more files to images/, or clear the 'posted_images'")
+            print("[image] list in state.json to let the existing ones go out again.")
         return None
     return random.choice(remaining)
 
@@ -703,6 +733,7 @@ def main() -> None:
     ap.add_argument("--text", help="post this exact text, verbatim -- no generation, no trend")
     ap.add_argument("--image", metavar="PATH", help="attach a specific image file (pairs with --text)")
     ap.add_argument("--whoami", action="store_true", help="check which account the current keys post as, without posting")
+    ap.add_argument("--list-images", action="store_true", help="show every file in images/ and whether it has been posted")
     args = ap.parse_args()
 
     if args.whoami:
@@ -740,11 +771,29 @@ def main() -> None:
             _save_tweet(text, tweet_id)
         return
 
+    if args.list_images:
+        print(f"[images] looking in: {IMAGES_DIR}")
+        state = _load_state()
+        posted = state.get("posted_images", [])
+        print(f"[images] state.json records {len(posted)} posted entr(ies)")
+        if IMAGES_DIR.exists():
+            for p in sorted(x for x in IMAGES_DIR.iterdir() if x.is_file()):
+                if p.suffix.lower() not in EXTS:
+                    print(f"  --  {p.name}  (unsupported extension, ignored)")
+                    continue
+                h = _file_hash(p)
+                mark = "POSTED" if (p.name in posted or h in posted) else "ready "
+                print(f"  {mark}  {p.name}  [{h}]")
+        pick_unposted_image()
+        return
+
     if args.post_image:
         image = pick_unposted_image()
         if not image:
-            print("[image] nothing to post.")
-            return
+            # exit non-zero so the Actions step goes red instead of quietly
+            # passing -- a green step that posted nothing is the confusing case
+            print("[image] nothing posted.")
+            sys.exit(1)
         caption = random.choice(IMAGE_CAPTIONS)
         print("---")
         print(f"[image] {image.name}" + (f'  ("{caption}")' if caption else ""))
