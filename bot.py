@@ -28,8 +28,9 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).parent
 UA = {"User-Agent": "Mozilla/5.0 (TheAlgorithmBot; satire account)"}
@@ -351,6 +352,149 @@ def generate_with_claude(trend: str) -> str | None:
     except Exception as e:
         print(f"[generate] claude failed: {e!r}", file=sys.stderr)
         return None
+
+
+# ---------------------------------------------------------------- scheduled queue
+
+QUEUE_FILE = HERE / "queue.json"
+# times you type are read in this zone. zoneinfo handles DST, so "09:00" in
+# January and "09:00" in July both mean 9am locally even though the UTC offset
+# differs. override with BOT_TZ (any IANA name, e.g. "UTC", "Europe/London").
+BOT_TZ = ZoneInfo(os.getenv("BOT_TZ", "America/New_York"))
+
+WHEN_FORMATS = ("%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %I:%M%p", "%Y-%m-%d %I%p")
+
+
+def parse_when(s: str) -> datetime:
+    """Accepts '2026-08-12 09:00', '2026-08-12 9am', or a relative
+    '+90m' / '+3h' / '+2d'. Returns an aware UTC datetime."""
+    s = s.strip()
+    m = re.fullmatch(r"\+(\d+)\s*([mhd])", s, re.I)
+    if m:
+        n, unit = int(m.group(1)), m.group(2).lower()
+        delta = {"m": timedelta(minutes=n), "h": timedelta(hours=n), "d": timedelta(days=n)}[unit]
+        return datetime.now(timezone.utc) + delta
+    cleaned = s.upper().replace(" AM", "AM").replace(" PM", "PM")
+    for fmt in WHEN_FORMATS:
+        for candidate in (s, cleaned):
+            try:
+                naive = datetime.strptime(candidate, fmt)
+            except ValueError:
+                continue
+            return naive.replace(tzinfo=BOT_TZ).astimezone(timezone.utc)
+    raise ValueError(
+        f"could not read the time {s!r}. use '2026-08-12 09:00', "
+        f"'2026-08-12 9am', or a relative '+90m' / '+3h' / '+2d'."
+    )
+
+
+def _load_queue() -> list[dict]:
+    try:
+        q = json.loads(QUEUE_FILE.read_text())
+        return q if isinstance(q, list) else []
+    except Exception:
+        return []
+
+
+def _save_queue(q: list[dict]) -> None:
+    q.sort(key=lambda i: i.get("at_utc", ""))
+    QUEUE_FILE.write_text(json.dumps(q, indent=2, ensure_ascii=False))
+
+
+def _fmt_local(iso_utc: str) -> str:
+    try:
+        return (datetime.fromisoformat(iso_utc)
+                .astimezone(BOT_TZ).strftime("%Y-%m-%d %H:%M %Z"))
+    except Exception:
+        return iso_utc
+
+
+def schedule_post(text: str, when: str, image: str | None = None) -> dict:
+    at = parse_when(when)
+    if at < datetime.now(timezone.utc) - timedelta(minutes=5):
+        print(f"[queue] warning: {_fmt_local(at.isoformat())} is in the past -- "
+              f"it will go out on the very next queue check.")
+    item = {
+        "at_utc": at.isoformat(),
+        "at_local": at.astimezone(BOT_TZ).strftime("%Y-%m-%d %H:%M %Z"),
+        "text": text,
+        "added": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
+    if image:
+        item["image"] = image
+    q = _load_queue()
+    q.append(item)
+    _save_queue(q)
+    print(f"[queue] scheduled for {item['at_local']}: {text[:90]!r}")
+    print(f"[queue] {len(q)} post(s) now waiting")
+    return item
+
+
+def show_queue() -> None:
+    q = _load_queue()
+    if not q:
+        print("[queue] nothing scheduled.")
+        return
+    now = datetime.now(timezone.utc)
+    print(f"[queue] {len(q)} post(s) waiting (times shown in {BOT_TZ}):")
+    for i, item in enumerate(q):
+        try:
+            due = datetime.fromisoformat(item["at_utc"]) <= now
+        except Exception:
+            due = False
+        mark = "DUE   " if due else "queued"
+        img = f"  +{item['image']}" if item.get("image") else ""
+        print(f"  [{i}] {mark}  {item.get('at_local', item.get('at_utc'))}{img}")
+        print(f"       {item.get('text', '')[:110]}")
+
+
+def drain_queue(dry_run: bool = False) -> bool:
+    """Post the single oldest due item. Returns True if something went out.
+
+    One per run on purpose -- if several came due while the cron was asleep,
+    they go out one check apart instead of machine-gunning the timeline.
+    """
+    q = _load_queue()
+    if not q:
+        print("[queue] empty, nothing due.")
+        return False
+    now = datetime.now(timezone.utc)
+    due = [i for i in q if i.get("at_utc", "") <= now.isoformat()]
+    if not due:
+        nxt = q[0]
+        print(f"[queue] {len(q)} waiting, none due yet. next: {nxt.get('at_local')}")
+        return False
+
+    item = due[0]
+    text = item.get("text", "")
+    img = item.get("image")
+    print(f"[queue] due since {item.get('at_local')} ({len(due)} due, posting the oldest)")
+    print("---")
+    print(text)
+    print(f"--- ({len(text)} chars)" + (f" +image {img}" if img else ""))
+
+    if dry_run:
+        print("[dry-run] not posting, leaving it in the queue.")
+        return False
+
+    if img:
+        path = IMAGES_DIR / img if not os.path.isabs(img) else Path(img)
+        if not path.exists():
+            print(f"[queue] image {path} is missing -- posting the text alone.")
+            img = None
+        else:
+            tweet_id = post_image_to_x(path, text)
+            _save_posted_image(path)
+            _save_tweet(text or "[image]", tweet_id, has_image=True)
+    if not img:
+        tweet_id = post_to_x(text)
+        _save_tweet(text, tweet_id)
+
+    q.remove(item)
+    _save_queue(q)
+    print(f"[queue] posted and removed. {len(q)} left.")
+    return True
 
 
 # ---------------------------------------------------------------- quote tweets
@@ -906,7 +1050,42 @@ def main() -> None:
     ap.add_argument("--whoami", action="store_true", help="check which account the current keys post as, without posting")
     ap.add_argument("--list-images", action="store_true", help="show every file in images/ and whether it has been posted")
     ap.add_argument("--quote-tweet", action="store_true", help="force a quote-tweet of a viral post on the picked trend")
+    ap.add_argument("--schedule", metavar="TEXT", help="queue a post for later; pair with --at")
+    ap.add_argument("--at", metavar="WHEN", help="when to post it: '2026-08-12 09:00', '2026-08-12 9am', '+3h'")
+    ap.add_argument("--queue", action="store_true", help="list everything waiting in the queue")
+    ap.add_argument("--unschedule", metavar="N", type=int, help="remove queue item N (see --queue)")
+    ap.add_argument("--drain-queue", action="store_true", help="post the oldest due item, if any")
     args = ap.parse_args()
+
+    if args.queue:
+        show_queue()
+        return
+
+    if args.unschedule is not None:
+        q = _load_queue()
+        if 0 <= args.unschedule < len(q):
+            gone = q.pop(args.unschedule)
+            _save_queue(q)
+            print(f"[queue] removed: {gone.get('at_local')} {gone.get('text','')[:80]!r}")
+        else:
+            print(f"[queue] no item {args.unschedule}. run --queue to see the list.")
+            sys.exit(1)
+        return
+
+    if args.schedule:
+        if not args.at:
+            print("[queue] --schedule needs --at, e.g. --at '2026-08-12 09:00'")
+            sys.exit(1)
+        try:
+            schedule_post(args.schedule, args.at, args.image)
+        except ValueError as e:
+            print(f"[queue] {e}")
+            sys.exit(1)
+        return
+
+    if args.drain_queue:
+        drain_queue(dry_run=args.dry_run)
+        return
 
     if args.whoami:
         whoami()
